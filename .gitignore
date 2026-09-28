@@ -1,0 +1,9 @@
+node_modules
+.sst
+dist
+.astro
+.env
+.env.*
+*.pmtiles
+data/
+.DS_Store

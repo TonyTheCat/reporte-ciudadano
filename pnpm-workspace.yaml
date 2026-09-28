@@ -1,0 +1,9 @@
+packages:
+  - packages/*
+allowBuilds:
+  esbuild: true
+  sharp: true
+  sst: true
+  cpu-features: false
+  protobufjs: false
+  ssh2: false

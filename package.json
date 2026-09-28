@@ -1,0 +1,19 @@
+{
+  "name": "reporte-ciudadano",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.20.0",
+  "scripts": {
+    "dev": "sst dev",
+    "deploy": "sst deploy --stage production",
+    "db:up": "docker compose up -d db",
+    "db:migrate": "pnpm --filter @rc/core migrate",
+    "db:seed": "pnpm --filter @rc/core seed",
+    "test": "pnpm --filter @rc/core test",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "sst": "4.17.1",
+    "typescript": "^5.9.0"
+  }
+}

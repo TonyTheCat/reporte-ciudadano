@@ -1,0 +1,26 @@
+{
+  "name": "@rc/core",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "migrate": "tsx scripts/migrate.ts",
+    "seed": "tsx scripts/seed.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "postgres": "^3.4.9",
+    "sst": "4.17.1",
+    "ulid": "^3.0.2",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "^12.1.0",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "vitest": "^5.0.2"
+  }
+}
