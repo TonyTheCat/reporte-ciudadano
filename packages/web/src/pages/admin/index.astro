@@ -1,0 +1,49 @@
+---
+import { listDepartments } from "@rc/core/areas";
+import { listCategories } from "@rc/core/categories";
+import { listReports } from "@rc/core/reports";
+import { STATUS_LABEL, STATUSES } from "@rc/core/status";
+import { summary } from "@rc/core/stats";
+import AdminNav from "../../components/AdminNav.astro";
+import ReportList from "../../components/ReportList.astro";
+import Base from "../../layouts/Base.astro";
+
+const p = Astro.url.searchParams;
+const status = (p.get("status") ?? "abiertos") as any;
+const visibility = (p.get("visibility") ?? "any") as any;
+const dept = p.get("dept") ?? undefined;
+const category = p.get("category") ?? undefined;
+const q = p.get("q") ?? undefined;
+const before = p.get("before") ? new Date(p.get("before")!) : undefined;
+const [reports, depts, cats, s] = await Promise.all([
+  listReports({ status: status || undefined, visibility, deptSlug: dept, category, q, before, limit: 50 }),
+  listDepartments(), listCategories(), summary(),
+]);
+const nextPage = reports.length === 50 ? new URLSearchParams({ ...Object.fromEntries(p), before: reports.at(-1)!.created_at.toISOString() }) : null;
+---
+<Base title="Bandeja de gestión" noindex>
+  <div class="mx-auto max-w-5xl px-4 py-6">
+    <h1 class="mb-3 text-2xl font-extrabold">Gestión de reportes</h1>
+    <AdminNav active="bandeja" />
+    <p class="mb-4 text-sm text-slate-600">{s.total} publicados · <b class="text-alert-600">{s.open} abiertos</b> · {s.resolved} resueltos</p>
+    <form class="card mb-4 grid gap-2 p-3 sm:grid-cols-5" method="get">
+      <input name="q" value={q} placeholder="Buscar título o código" class="input py-2 sm:col-span-5" />
+      <select name="status" class="input py-2">
+        <option value="abiertos" selected={status === "abiertos"}>Abiertos</option>
+        <option value="" selected={!status}>Todos los estados</option>
+        {STATUSES.map((s) => <option value={s} selected={status === s}>{STATUS_LABEL[s]}</option>)}
+      </select>
+      <select name="visibility" class="input py-2">
+        <option value="any" selected={visibility === "any"}>Toda visibilidad</option>
+        <option value="published" selected={visibility === "published"}>Publicados</option>
+        <option value="pending" selected={visibility === "pending"}>En revisión</option>
+        <option value="hidden" selected={visibility === "hidden"}>Ocultos</option>
+      </select>
+      <select name="dept" class="input py-2"><option value="">Todo el país</option>{depts.map((d) => <option value={d.slug} selected={dept === d.slug}>{d.name}</option>)}</select>
+      <select name="category" class="input py-2"><option value="">Todas</option>{cats.map((c) => <option value={c.slug} selected={category === c.slug}>{c.name}</option>)}</select>
+      <button class="btn-primary py-2">Filtrar</button>
+    </form>
+    <ReportList reports={reports} admin empty="No hay reportes con esos filtros." />
+    {nextPage && <a class="btn-ghost mt-4 w-full" href={`?${nextPage}`}>Ver más antiguos</a>}
+  </div>
+</Base>

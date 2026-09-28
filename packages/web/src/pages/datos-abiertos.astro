@@ -1,0 +1,55 @@
+---
+import { listDepartments } from "@rc/core/areas";
+import { listCategories } from "@rc/core/categories";
+import Base from "../layouts/Base.astro";
+import { config } from "../lib/server/config";
+
+const [depts, cats] = await Promise.all([listDepartments(), listCategories()]);
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  name: "Reportes ciudadanos de problemas urbanos en Paraguay",
+  description: "Reportes georreferenciados de baches, raudales, inseguridad, vertederos ilegales y otros problemas urbanos, con su estado de resolución.",
+  url: `${config.siteUrl}/datos-abiertos`,
+  license: "https://creativecommons.org/licenses/by/4.0/",
+  isAccessibleForFree: true,
+  spatialCoverage: { "@type": "Place", name: "Paraguay" },
+  distribution: [
+    { "@type": "DataDownload", encodingFormat: "application/geo+json", contentUrl: `${config.siteUrl}/api/stats/export.geojson` },
+    { "@type": "DataDownload", encodingFormat: "text/csv", contentUrl: `${config.siteUrl}/api/stats/export.csv` },
+  ],
+};
+---
+<Base title="Datos abiertos" description="Descargá los reportes ciudadanos de Paraguay en GeoJSON o CSV para analizarlos en QGIS, Excel o cualquier herramienta." jsonLd={jsonLd}>
+  <div class="prose-rc mx-auto max-w-3xl px-4 py-6">
+    <h1 class="mb-3 text-3xl font-extrabold">Datos abiertos</h1>
+    <p>Todos los reportes publicados se pueden descargar libremente bajo licencia <a class="underline" href="https://creativecommons.org/licenses/by/4.0/deed.es">CC BY 4.0</a>. Los archivos no incluyen datos personales de quienes reportan.</p>
+    <div class="not-prose my-6 grid gap-3 sm:grid-cols-2">
+      <a class="btn-primary" href="/api/stats/export.geojson">⬇ Todo el país (GeoJSON)</a>
+      <a class="btn-ghost" href="/api/stats/export.csv">⬇ Todo el país (CSV)</a>
+    </div>
+    <form method="get" action="/api/stats/export.csv" class="card not-prose grid gap-3 p-4 sm:grid-cols-2">
+      <h2 class="font-bold sm:col-span-2">Filtrar antes de descargar</h2>
+      <label class="text-sm font-semibold">Departamento
+        <select name="dept" class="input"><option value="">Todos</option>{depts.map((d) => <option value={d.id}>{d.name}</option>)}</select>
+      </label>
+      <label class="text-sm font-semibold">Categoría
+        <select name="category" class="input"><option value="">Todas</option>{cats.map((c) => <option value={c.slug}>{c.name}</option>)}</select>
+      </label>
+      <label class="text-sm font-semibold">Desde<input type="date" name="from" class="input" /></label>
+      <label class="text-sm font-semibold">Hasta<input type="date" name="to" class="input" /></label>
+      <button class="btn-primary sm:col-span-2" formaction="/api/stats/export.csv">Descargar CSV</button>
+      <button class="btn-ghost sm:col-span-2" formaction="/api/stats/export.geojson">Descargar GeoJSON</button>
+    </form>
+    <h2>Campos</h2>
+    <ul>
+      <li><b>codigo</b>: código público del reporte (PY-AAAA-NNNNNN).</li>
+      <li><b>categoria</b>, <b>estado</b>, <b>titulo</b>.</li>
+      <li><b>lat</b>, <b>lng</b>: coordenadas WGS84 (EPSG:4326).</li>
+      <li><b>departamento</b>, <b>distrito</b>: asignados según los límites oficiales de la DGEEC.</li>
+      <li><b>confirmaciones</b>: personas que confirmaron el problema.</li>
+      <li><b>creado</b>, <b>resuelto</b>: fechas en formato ISO 8601.</li>
+    </ul>
+    <p>Para análisis más avanzados, usá la <a class="underline" href="/estadisticas">consulta por zona</a> o escribinos para acceder a la base PostGIS.</p>
+  </div>
+</Base>

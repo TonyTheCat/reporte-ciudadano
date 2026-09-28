@@ -1,0 +1,49 @@
+---
+import { mediaUrl, photoReviewQueue } from "@rc/core/photos";
+import { flagQueue } from "@rc/core/reports";
+import AdminNav from "../../components/AdminNav.astro";
+import { FlagDecision, PhotoDecision } from "../../components/islands/ModerationActions";
+import Base from "../../layouts/Base.astro";
+import { timeAgo } from "../../lib/format";
+
+const [photos, flags] = await Promise.all([photoReviewQueue(), flagQueue()]);
+const REASON: Record<string, string> = { falso: "Falso", ofensivo: "Ofensivo", datos_personales: "Datos personales", spam: "Spam", duplicado: "Duplicado", otro: "Otro" };
+---
+<Base title="Moderación" noindex>
+  <div class="mx-auto max-w-5xl px-4 py-6">
+    <h1 class="mb-3 text-2xl font-extrabold">Moderación</h1>
+    <AdminNav active="moderacion" />
+    <section class="mb-8">
+      <h2 class="mb-2 text-lg font-bold">Reportes denunciados ({flags.length})</h2>
+      {flags.length === 0 ? <p class="text-slate-500">Nada pendiente. 🎉</p> : (
+        <ul class="grid gap-3 sm:grid-cols-2">
+          {flags.map((f) => (
+            <li class="card space-y-2 p-4">
+              <a href={`/admin/r/${f.public_code.toLowerCase()}`} class="font-semibold underline">{f.title}</a>
+              <p class="text-xs text-slate-500">{f.public_code} · {f.visibility}</p>
+              <ul class="text-sm">{f.flags.map((x) => <li>⚑ {REASON[x.reason]} {x.note && `— ${x.note}`} <span class="text-slate-400">({timeAgo(x.created_at)})</span></li>)}</ul>
+              <FlagDecision client:visible id={f.report_id} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+    <section>
+      <h2 class="mb-2 text-lg font-bold">Fotos para revisar ({photos.length})</h2>
+      {photos.length === 0 ? <p class="text-slate-500">Nada pendiente.</p> : (
+        <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {photos.map((p) => (
+            <li class="card overflow-hidden">
+              {p.s3_key_public && <img src={mediaUrl(p.s3_key_public)} alt="" class="aspect-square w-full object-cover blur-sm hover:blur-none" />}
+              <div class="space-y-1 p-2 text-xs">
+                <a href={`/admin/r/${p.public_code.toLowerCase()}`} class="font-semibold underline">{p.title}</a>
+                <p class="text-amber-700">{((p.moderation as any).labels ?? []).map((l: any) => l.name).join(", ")}</p>
+                <PhotoDecision client:visible id={p.id} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  </div>
+</Base>

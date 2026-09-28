@@ -1,0 +1,34 @@
+---
+import { listDepartments } from "@rc/core/areas";
+import { countsByArea, summary, timeseries } from "@rc/core/stats";
+import StatsMap from "../../components/islands/StatsMap";
+import StatsBlock from "../../components/StatsBlock.astro";
+import Base from "../../layouts/Base.astro";
+
+const [depts, counts, s, ts] = await Promise.all([listDepartments(), countsByArea(1), summary(), timeseries({}, 26)]);
+const byId = new Map(counts.map((c) => [c.area_id, c]));
+---
+<Base title="Reportes por departamento de Paraguay" description="Problemas urbanos reportados en cada departamento y distrito de Paraguay: cantidad, abiertos y resueltos." active="zonas">
+  <div class="mx-auto max-w-5xl space-y-6 px-4 py-6">
+    <header>
+      <h1 class="text-3xl font-extrabold">Paraguay</h1>
+      <p class="text-slate-600">Elegí tu departamento para ver los reportes de tu zona.</p>
+    </header>
+    <StatsMap client:visible level={1} />
+    <ul class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      {depts.map((d) => {
+        const c = byId.get(d.id);
+        return (
+          <li>
+            <a href={`/py/${d.slug}`} class="card flex items-center justify-between p-4 hover:ring-brand-500">
+              <span class="font-semibold">{d.name}</span>
+              <span class="text-sm text-slate-500">{c?.total ?? 0} reportes · <span class="text-alert-600">{c?.open ?? 0} abiertos</span></span>
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+    <h2 class="text-xl font-bold">Resumen nacional</h2>
+    <StatsBlock summary={s} timeseries={ts} categoryHref={(slug) => `/categoria/${slug}`} />
+  </div>
+</Base>

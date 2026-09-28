@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #eef5ff;
+  --color-brand-100: #d9e8ff;
+  --color-brand-500: #1f6fd1;
+  --color-brand-600: #0b5cad;
+  --color-brand-700: #0a4a8a;
+  --color-brand-900: #0a2748;
+  --color-alert-500: #d52b1e;
+  --color-alert-600: #b3241a;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html { -webkit-tap-highlight-color: transparent; }
+/* Las islas de Astro no deben romper la cadena de alturas (mapas a pantalla completa). */
+astro-island { display: contents; }
+body { @apply bg-slate-50 text-slate-900 antialiased; }
+
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none; }
+@utility btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-700; }
+@utility btn-alert { @apply btn bg-alert-500 text-white hover:bg-alert-600; }
+@utility btn-ghost { @apply btn bg-white text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50; }
+@utility card { @apply rounded-2xl bg-white ring-1 ring-slate-200/70 shadow-sm; }
+@utility chip { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold; }
+@utility input { @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100; }
+@utility label { @apply mb-1 block text-sm font-semibold text-slate-700; }
+.prose-rc p { @apply mb-3 leading-relaxed; }
+.prose-rc h2 { @apply mt-6 mb-2 text-lg font-bold; }
+.prose-rc ul { @apply mb-3 list-disc pl-5; }
+
+.maplibregl-popup-content { @apply rounded-xl! p-0! shadow-lg! overflow-hidden; }
+.maplibregl-ctrl-group { @apply rounded-xl! overflow-hidden; }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.home-map .maplibregl-ctrl-top-right { top: 6.5rem; }

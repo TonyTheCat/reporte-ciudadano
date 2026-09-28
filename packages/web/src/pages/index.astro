@@ -1,0 +1,30 @@
+---
+import { listCategories } from "@rc/core/categories";
+import MapView from "../components/islands/MapView";
+import Base from "../layouts/Base.astro";
+import { config } from "../lib/server/config";
+
+const categories = (await listCategories()).map(({ slug, name, icon, color }) => ({ slug, name, icon, color }));
+const p = Astro.url.searchParams;
+const lat = Number(p.get("lat")), lng = Number(p.get("lng")), z = Number(p.get("z") ?? 15);
+const initial = Number.isFinite(lat) && Number.isFinite(lng) && p.has("lat") ? { lat, lng, zoom: z } : undefined;
+const error = p.get("e");
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Reporte Ciudadano",
+  url: config.siteUrl,
+  inLanguage: "es-PY",
+  description: "Mapa abierto para reportar y seguir problemas urbanos en Paraguay: baches, raudales, inseguridad, basurales y más.",
+};
+---
+<Base title="Reporte Ciudadano" active="mapa" fullscreen jsonLd={jsonLd}>
+  <h1 class="sr-only">Mapa de problemas urbanos reportados por la ciudadanía en Paraguay</h1>
+  {error && (
+    <p class="absolute top-24 left-1/2 z-30 -translate-x-1/2 rounded-xl bg-red-600 px-4 py-2 text-sm text-white shadow" role="alert">
+      {error === "permisos" ? "No tenés permisos para esa sección." : "No se pudo iniciar sesión. Probá de nuevo."}
+    </p>
+  )}
+  <MapView client:only="react" categories={categories} initial={initial} />
+</Base>

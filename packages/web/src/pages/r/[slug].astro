@@ -1,0 +1,156 @@
+---
+import { listPhotos, mediaUrl } from "@rc/core/photos";
+import { codeFromParam, getReportByCode, getReportById, isSubscribed, listEvents, reportPath } from "@rc/core/reports";
+import { OPEN_STATUSES, STATUS_LABEL } from "@rc/core/status";
+import MiniMap from "../../components/islands/MiniMap";
+import ReportActions from "../../components/islands/ReportActions";
+import StatusBadge from "../../components/StatusBadge.astro";
+import Base from "../../layouts/Base.astro";
+import { formatDate, formatDateTime, timeAgo } from "../../lib/format";
+import { config } from "../../lib/server/config";
+
+const report = await getReportByCode(codeFromParam(Astro.params.slug!));
+const user = Astro.locals.user;
+if (!report || (report.visibility === "hidden" && !user?.isStaff)) {
+  return Astro.rewrite("/404");
+}
+// URL canónica con el slug correcto.
+const canonicalPath = reportPath(report);
+if (Astro.url.pathname !== canonicalPath) return Astro.redirect(canonicalPath, 301);
+
+const [photos, events, following, original] = await Promise.all([
+  listPhotos(report.id),
+  listEvents(report.id, !!user?.isStaff),
+  user ? isSubscribed(report.id, user.id) : Promise.resolve(false),
+  report.duplicate_of ? getReportById(report.duplicate_of) : Promise.resolve(undefined),
+]);
+const reportPhotos = photos.filter((p) => p.kind === "report");
+const resolutionPhotos = photos.filter((p) => p.kind === "resolution");
+const place = [report.barrio_name, report.district_name, report.dept_name].filter(Boolean).join(", ") || "Paraguay";
+const url = `${config.siteUrl}${canonicalPath}`;
+const isOpen = OPEN_STATUSES.includes(report.status);
+const extraEntries = Object.entries(report.extra ?? {});
+
+const description = `${report.category_name} en ${place}. Estado: ${STATUS_LABEL[report.status]}. ${report.description}`.slice(0, 160);
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Report",
+    name: report.title,
+    headline: report.title,
+    description: report.description || report.category_name,
+    url,
+    datePublished: report.created_at.toISOString(),
+    dateModified: report.updated_at.toISOString(),
+    identifier: report.public_code,
+    about: report.category_name,
+    image: reportPhotos.map((p) => `${config.siteUrl}${mediaUrl(p.s3_key_public)}`),
+    contentLocation: {
+      "@type": "Place",
+      name: place,
+      geo: { "@type": "GeoCoordinates", latitude: report.lat, longitude: report.lng },
+      address: { "@type": "PostalAddress", addressLocality: report.district_name, addressRegion: report.dept_name, addressCountry: "PY" },
+    },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Paraguay", item: `${config.siteUrl}/py` },
+      ...(report.dept_slug ? [{ "@type": "ListItem", position: 2, name: report.dept_name, item: `${config.siteUrl}/py/${report.dept_slug}` }] : []),
+      ...(report.district_slug ? [{ "@type": "ListItem", position: 3, name: report.district_name, item: `${config.siteUrl}/py/${report.dept_slug}/${report.district_slug}` }] : []),
+      { "@type": "ListItem", position: 4, name: report.title, item: url },
+    ],
+  },
+];
+
+const eventText = (e: (typeof events)[number]) => {
+  switch (e.type) {
+    case "created": return "Reporte creado";
+    case "status_change": return `Estado: ${STATUS_LABEL[e.to_status!]}`;
+    case "photo": return e.note ?? "Se agregó una foto";
+    case "comment": return e.public ? "Actualización" : "Nota interna";
+    case "confirmation": return "Confirmación";
+    case "visibility": return `Visibilidad: ${e.note}`;
+    default: return e.type;
+  }
+};
+---
+<Base title={`${report.title} · ${place}`} description={description} image={mediaUrl(reportPhotos[0]?.s3_key_public ?? null)} noindex={report.visibility !== "published" || report.status === "duplicado"} jsonLd={jsonLd}>
+  <article class="mx-auto max-w-3xl px-4 py-4">
+    <nav class="mb-3 text-sm text-slate-500" aria-label="Migas de pan">
+      <a href="/py" class="hover:underline">Paraguay</a>
+      {report.dept_slug && <> › <a href={`/py/${report.dept_slug}`} class="hover:underline">{report.dept_name}</a></>}
+      {report.district_slug && <> › <a href={`/py/${report.dept_slug}/${report.district_slug}`} class="hover:underline">{report.district_name}</a></>}
+    </nav>
+
+    {report.visibility !== "published" && (
+      <p class="mb-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Este reporte está en revisión y no aparece en el mapa público.</p>
+    )}
+    {original && (
+      <p class="mb-3 rounded-xl bg-slate-100 p-3 text-sm">Este reporte es un duplicado de <a class="font-semibold text-brand-600 underline" href={reportPath(original)}>{original.title}</a>.</p>
+    )}
+
+    <header class="mb-4">
+      <p class="mb-2 flex flex-wrap items-center gap-2 text-sm">
+        <a href={`/categoria/${report.category_slug}`} class="chip" style={`background:${report.category_color}1f;color:${report.category_color}`}>{report.category_icon} {report.category_name}</a>
+        <StatusBadge status={report.status} />
+        <span class="font-mono text-xs text-slate-400">{report.public_code}</span>
+      </p>
+      <h1 class="text-2xl leading-tight font-extrabold sm:text-3xl">{report.title}</h1>
+      <p class="mt-1 text-sm text-slate-500">📍 {place} · Reportado el <time datetime={report.created_at.toISOString()}>{formatDate(report.created_at)}</time> ({timeAgo(report.created_at)})</p>
+    </header>
+
+    <div class="grid gap-6 md:grid-cols-[1fr_18rem]">
+      <div class="space-y-5">
+        {reportPhotos.length > 0 && (
+          <div class:list={["grid gap-2", reportPhotos.length > 1 ? "grid-cols-2" : ""]}>
+            {reportPhotos.map((p, i) => (
+              <a href={mediaUrl(p.s3_key_public)} class:list={["block overflow-hidden rounded-2xl bg-slate-100", i === 0 && reportPhotos.length === 3 ? "col-span-2" : ""]}>
+                <img src={mediaUrl(p.s3_key_public)} alt={`Foto ${i + 1} de: ${report.title}`} width={p.width ?? undefined} height={p.height ?? undefined} class="h-full max-h-[28rem] w-full object-cover" loading={i === 0 ? "eager" : "lazy"} />
+              </a>
+            ))}
+          </div>
+        )}
+
+        {report.description && <p class="text-lg leading-relaxed whitespace-pre-line">{report.description}</p>}
+        {extraEntries.length > 0 && (
+          <dl class="card grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 p-4 text-sm">
+            {extraEntries.map(([k, v]) => (<><dt class="font-semibold capitalize text-slate-500">{k}</dt><dd>{v}</dd></>))}
+          </dl>
+        )}
+
+        {resolutionPhotos.length > 0 && (
+          <section>
+            <h2 class="mb-2 font-bold text-green-700">Después de la resolución</h2>
+            <div class="grid grid-cols-2 gap-2">
+              {resolutionPhotos.map((p) => <img src={mediaUrl(p.s3_key_public)} alt="Foto de la resolución" class="rounded-2xl" loading="lazy" />)}
+            </div>
+          </section>
+        )}
+
+        <section>
+          <h2 class="mb-3 text-lg font-bold">Seguimiento del caso</h2>
+          <ol class="relative ml-2 border-l-2 border-slate-200">
+            {events.map((e) => (
+              <li class="mb-4 ml-5">
+                <span class="absolute -left-[9px] mt-1 h-4 w-4 rounded-full border-2 border-white" style={`background:${e.to_status ? "var(--color-brand-600)" : "#94a3b8"}`}></span>
+                <p class="font-semibold">{eventText(e)} {e.actor_role !== "ciudadano" && e.actor_role !== "sistema" && <span class="chip ml-1 bg-brand-50 text-brand-700">{e.actor_role}</span>}</p>
+                {e.note && e.type !== "visibility" && e.type !== "photo" && <p class="text-slate-700">{e.note}</p>}
+                <p class="text-xs text-slate-500"><time datetime={e.created_at.toISOString()}>{formatDateTime(e.created_at)}</time></p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      </div>
+
+      <aside class="space-y-4">
+        <MiniMap client:visible lat={report.lat} lng={report.lng} color={report.category_color} />
+        <ReportActions client:load id={report.id} code={report.public_code} title={report.title} url={url}
+          confirmations={report.confirmations_count} open={isOpen} loggedIn={!!user} following={following}
+          isOwner={!!user && report.reporter_user_id === user.id} photoCount={reportPhotos.length} />
+        {user?.isStaff && <a href={`/admin/r/${report.public_code.toLowerCase()}`} class="btn-primary w-full">Gestionar caso</a>}
+      </aside>
+    </div>
+  </article>
+</Base>

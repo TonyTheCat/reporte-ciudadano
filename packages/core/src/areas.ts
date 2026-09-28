@@ -54,12 +54,11 @@ export async function locate(lat: number, lng: number) {
 /** GeoJSON simplificado de un nivel, para coropléticos. */
 export async function areasGeoJSON(level: 1 | 2, parentId?: number, country = "PY") {
   const s = sql();
-  const tolerance = level === 1 ? 0.01 : 0.002;
   const [row] = await s<{ fc: unknown }[]>`
     SELECT json_build_object('type', 'FeatureCollection', 'features', coalesce(json_agg(json_build_object(
       'type', 'Feature', 'id', a.id,
       'properties', json_build_object('id', a.id, 'name', a.name, 'slug', a.slug),
-      'geometry', ST_AsGeoJSON(ST_SimplifyPreserveTopology(a.geom, ${tolerance}), 5)::json
+      'geometry', ST_AsGeoJSON(a.geom_simple, 5)::json
     )), '[]'::json)) AS fc
     FROM admin_areas a
     WHERE a.country_code = ${country} AND a.level = ${level}

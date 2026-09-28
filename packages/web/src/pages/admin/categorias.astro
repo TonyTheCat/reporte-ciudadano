@@ -1,0 +1,26 @@
+---
+import { listCategories } from "@rc/core/categories";
+import AdminNav from "../../components/AdminNav.astro";
+import { CategoryWindow } from "../../components/islands/ModerationActions";
+import Base from "../../layouts/Base.astro";
+
+const cats = await listCategories();
+---
+<Base title="Categorías" noindex>
+  <div class="mx-auto max-w-5xl px-4 py-6">
+    <h1 class="mb-3 text-2xl font-extrabold">Categorías</h1>
+    <AdminNav active="categorias" />
+    <p class="mb-4 text-sm text-slate-600">Definí una ventana de fechas para habilitar una categoría solo en ese período (por ejemplo, “Propaganda electoral fuera de fecha” desde el día siguiente a las elecciones). Sin fechas, la categoría está siempre activa.</p>
+    <ul class="card divide-y divide-slate-100">
+      {cats.map((c) => (
+        <li class="flex flex-wrap items-center justify-between gap-3 p-4">
+          <div>
+            <p class="font-semibold">{c.icon} {c.name}</p>
+            <p class:list={["text-xs", c.accepting ? "text-green-700" : "text-slate-500"]}>{c.accepting ? "Recibe reportes" : "Cerrada ahora"}</p>
+          </div>
+          <CategoryWindow client:visible slug={c.slug} from={c.active_from?.toISOString() ?? null} to={c.active_to?.toISOString() ?? null} />
+        </li>
+      ))}
+    </ul>
+  </div>
+</Base>

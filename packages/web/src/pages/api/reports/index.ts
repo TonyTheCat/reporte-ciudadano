@@ -1,0 +1,52 @@
+import { reservePhotos } from "@rc/core/photos";
+import { hit } from "@rc/core/ratelimit";
+import { createReport, createReportSchema, listReports, reportPath } from "@rc/core/reports";
+import type { APIRoute } from "astro";
+import { z } from "zod";
+import { clientIp, error, handle, ipHash, json } from "../../../lib/server/http";
+import { presignUpload, verifyTurnstile } from "../../../lib/server/services";
+
+const bodySchema = createReportSchema.extend({
+  photos: z.number().int().min(0).max(4).default(0),
+  turnstile: z.string().optional(),
+});
+
+export const POST: APIRoute = handle(async (ctx) => {
+  const body = bodySchema.parse(await ctx.request.json());
+  const ip = ipHash(ctx);
+  const user = ctx.locals.user;
+  const key = user ? `u:${user.id}` : `ip:${ip}`;
+  if (!(await hit(`report:h:${key}`, user ? 20 : 8, 3600)) || !(await hit(`report:d:${key}`, user ? 60 : 25, 86400))) {
+    return error(429, "rate_limited", "Hiciste muchos reportes seguidos. Probá de nuevo más tarde.");
+  }
+  if (!user && !(await verifyTurnstile(body.turnstile, clientIp(ctx)))) {
+    return error(400, "captcha", "No pudimos verificar que seas una persona. Recargá la página.");
+  }
+  const { report, anonToken } = await createReport(body, { userId: user?.id, ipHash: ip });
+  const reserved = await reservePhotos(report.id, body.photos);
+  const uploads = (await Promise.all(reserved.map((p) => presignUpload(p.s3_key_original)))).filter(Boolean);
+  return json(
+    { report: { id: report.id, code: report.public_code, path: reportPath(report), title: report.title }, anonToken, uploads },
+    { status: 201 },
+  );
+});
+
+export const GET: APIRoute = handle(async (ctx) => {
+  const p = ctx.url.searchParams;
+  const bbox = p.get("bbox")?.split(",").map(Number);
+  const rows = await listReports({
+    bbox: bbox?.length === 4 && bbox.every(Number.isFinite) ? (bbox as [number, number, number, number]) : undefined,
+    category: p.get("category") ?? undefined,
+    status: (p.get("status") as any) ?? undefined,
+    q: p.get("q")?.slice(0, 80) ?? undefined,
+    limit: Number(p.get("limit") ?? 30),
+  });
+  return json(
+    rows.map((r) => ({
+      code: r.public_code, path: reportPath(r), title: r.title, status: r.status, category: r.category_slug,
+      icon: r.category_icon, color: r.category_color, lat: r.lat, lng: r.lng, created_at: r.created_at,
+      place: [r.district_name, r.dept_name].filter(Boolean).join(", "), cover: r.cover_url, confirmations: r.confirmations_count,
+    })),
+    { cache: "public, max-age=15, s-maxage=30" },
+  );
+});

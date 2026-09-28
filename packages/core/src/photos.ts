@@ -3,6 +3,11 @@ import { sql } from "./db";
 
 export const MAX_PHOTOS_PER_REPORT = 4;
 
+/** "public/abc/def.jpg" → "/media/abc/def.jpg" (ruta servida por CloudFront). */
+export function mediaUrl(key: string | null): string | null {
+  return key ? `/media/${key.replace(/^public\//, "")}` : null;
+}
+
 export interface Photo {
   id: string;
   report_id: string;

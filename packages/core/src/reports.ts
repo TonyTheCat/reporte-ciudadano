@@ -77,7 +77,7 @@ const SELECT_REPORT = (s: ReturnType<typeof sql>) => s`
     d.name AS dept_name, d.slug AS dept_slug, di.name AS district_name, di.slug AS district_slug, b.name AS barrio_name,
     r.confirmations_count, r.flags_count, r.duplicate_of, r.reporter_user_id,
     r.created_at, r.updated_at, r.resolved_at,
-    (SELECT p.s3_key_thumb FROM report_photos p
+    (SELECT '/media/' || substr(p.s3_key_thumb, 8) FROM report_photos p
       WHERE p.report_id = r.id AND p.status = 'approved' ORDER BY p.created_at LIMIT 1) AS cover_url
   FROM reports r
   JOIN categories c ON c.id = r.category_id
@@ -320,4 +320,18 @@ export async function flagQueue(): Promise<FlagQueueItem[]> {
     FROM flags f JOIN reports r ON r.id = f.report_id
     WHERE NOT f.resolved
     GROUP BY r.id ORDER BY max(f.created_at) DESC LIMIT 100`;
+}
+
+export const SITEMAP_PAGE = 5000;
+
+export async function countPublishedReports(): Promise<number> {
+  const [{ n }] = await sql()<{ n: number }[]>`SELECT count(*)::int AS n FROM reports WHERE visibility = 'published' AND status <> 'duplicado'`;
+  return n;
+}
+
+export async function sitemapReports(page: number) {
+  return sql()<{ public_code: string; slug: string; updated_at: Date }[]>`
+    SELECT public_code, slug, updated_at FROM reports
+    WHERE visibility = 'published' AND status <> 'duplicado'
+    ORDER BY created_at LIMIT ${SITEMAP_PAGE} OFFSET ${page * SITEMAP_PAGE}`;
 }
