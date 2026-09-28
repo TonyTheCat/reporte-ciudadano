@@ -17,7 +17,7 @@ export const config = {
   },
   get cognito() {
     const pool = res<{ id: string }>("Auth");
-    const client = res<{ id: string }>("AuthWeb");
+    const client = res<{ id: string }>("AuthClient");
     const hostedUi = process.env.COGNITO_HOSTED_UI;
     return pool && client && hostedUi ? { userPoolId: pool.id, clientId: client.id, hostedUi } : undefined;
   },

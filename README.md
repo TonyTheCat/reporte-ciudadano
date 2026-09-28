@@ -51,6 +51,16 @@ Para desarrollar contra AWS real (bucket, Rekognition, Cognito) usá `pnpm dev` 
 
 El DNS de `tereredev.com` está en Hostinger, así que el certificado y el CNAME se cargan a mano.
 
+**Credenciales**: el perfil `marcos` usa `aws login` (`login_session`), que SST todavía no soporta. En `~/.aws/config` hay un perfil puente que reutiliza esa sesión:
+
+```ini
+[profile marcos-sst]
+credential_process = aws configure export-credentials --profile marcos --format process
+region = us-east-1
+```
+
+Todos los comandos de SST se corren con `AWS_PROFILE=marcos-sst` (por ejemplo `AWS_PROFILE=marcos-sst pnpm run deploy`).
+
 1. **Certificado** (una sola vez):
    ```bash
    aws acm request-certificate --domain-name ciudadano.tereredev.com \

@@ -35,7 +35,7 @@ export function createAuth(siteUrl: $util.Input<string>) {
   const callbacks = $dev
     ? ["http://localhost:4321/auth/callback"]
     : [$interpolate`${siteUrl}/auth/callback`];
-  const client = userPool.addClient("Web", {
+  const client = userPool.addClient("AuthClient", {
     providers,
     callbackUrls: callbacks,
     transform: {

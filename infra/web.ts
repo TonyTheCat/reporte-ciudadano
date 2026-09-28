@@ -27,8 +27,9 @@ export function createWeb(opts: {
   const siteUrl = useDomain ? `https://${DOMAIN}` : router.url;
   const auth = createAuth(siteUrl);
 
-  // SES: requiere verificar el dominio (registros DKIM en Hostinger) y salir del sandbox.
-  const email = $app.stage === "production"
+  // SES: se habilita con SES_ENABLED=1 una vez cargados en Hostinger los registros de verificación/DKIM
+  // (el deploy espera a que el dominio esté verificado). Sin SES los avisos quedan en los logs.
+  const email = $app.stage === "production" && process.env.SES_ENABLED === "1"
     ? new sst.aws.Email("Email", { sender: DOMAIN, dns: false })
     : undefined;
 

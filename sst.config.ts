@@ -8,7 +8,8 @@ export default $config({
       protect: input?.stage === "production",
       home: "aws",
       providers: {
-        aws: { region: "us-east-1", profile: process.env.CI ? undefined : "marcos" },
+        // Perfil de AWS_PROFILE (p. ej. marcos-sst, ver README) o "marcos"; en CI se usan las credenciales del entorno.
+        aws: { region: "us-east-1", profile: process.env.CI || process.env.AWS_ACCESS_KEY_ID ? undefined : (process.env.AWS_PROFILE ?? "marcos") },
         random: "4.18.0",
       },
     };
