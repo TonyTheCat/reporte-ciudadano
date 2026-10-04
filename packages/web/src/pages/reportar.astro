@@ -3,10 +3,12 @@ import { listCategories } from "@rc/core/categories";
 import ReportWizard from "../components/islands/ReportWizard";
 import Base from "../layouts/Base.astro";
 import { config } from "../lib/server/config";
+import { homeFor } from "../lib/server/home";
 
 const categories = (await listCategories()).map(({ slug, name, description, icon, color, accepting, extra_fields }) => ({ slug, name, description, icon, color, accepting, extra_fields }));
+const home = await homeFor(Astro.locals.user);
 ---
 <Base title="Reportar un problema" description="Reportá en 1 minuto un problema de tu ciudad con foto y ubicación: baches, raudales, basura, inseguridad, alumbrado y más." active="reportar">
-  <ReportWizard client:only="react" categories={categories} turnstileSiteKey={config.turnstileSiteKey} loggedIn={!!Astro.locals.user} />
+  <ReportWizard client:only="react" categories={categories} turnstileSiteKey={config.turnstileSiteKey} loggedIn={!!Astro.locals.user} homeBBox={home?.bbox} />
   <noscript><p class="p-6 text-center">Para reportar necesitás activar JavaScript.</p></noscript>
 </Base>

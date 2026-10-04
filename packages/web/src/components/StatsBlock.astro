@@ -53,7 +53,7 @@ const line = timeseries.map((t, i) => `${i ? "L" : "M"}${(P + bw * i + bw / 2).t
       </p>
       <svg viewBox={`0 0 ${W} ${H}`} class="h-36 w-full" role="img" aria-label="Reportes creados y resueltos por semana">
         {timeseries.map((t, i) => (
-          <rect x={P + bw * i + 1} y={y(t.created)} width={Math.max(1, bw - 2)} height={H - P - y(t.created)} rx="2" fill="#1f6fd1" opacity="0.8">
+          <rect x={P + bw * i + 1} y={y(t.created)} width={Math.max(1, bw - 2)} height={H - P - y(t.created)} rx="2" fill="#1a856a" opacity="0.8">
             <title>{`Semana del ${t.week.toISOString().slice(0, 10)}: ${t.created} reportados, ${t.resolved} resueltos`}</title>
           </rect>
         ))}

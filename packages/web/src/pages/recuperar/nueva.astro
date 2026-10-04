@@ -1,0 +1,64 @@
+---
+import CodeField from "../../components/auth/CodeField.astro";
+import Notice from "../../components/auth/Notice.astro";
+import PasswordField from "../../components/auth/PasswordField.astro";
+import AuthLayout from "../../layouts/AuthLayout.astro";
+import { safeNext, startSession } from "../../lib/server/auth";
+import { confirmForgotPassword, forgotPassword, signIn } from "../../lib/server/cognito";
+import { allow, errorMessage, field, isEmail, keepNext, maskEmail, postedForm, qs } from "../../lib/server/forms";
+
+const params = Astro.url.searchParams;
+let next = safeNext(params.get("next"));
+const email = params.get("email") ?? "";
+let code = /^\d{6}$/.test(params.get("code") ?? "") ? params.get("code")! : "";
+if (!isEmail(email)) return Astro.redirect(`/recuperar${qs({ next: keepNext(next) })}`);
+
+let error: string | undefined;
+let info: string | undefined;
+
+try {
+  const form = await postedForm(Astro);
+  if (form) {
+    next = safeNext(field(form, "next"));
+    if (form.get("action") === "resend") {
+      await allow(Astro, "forgot", 5, 3600);
+      await forgotPassword(email);
+      info = "Te enviamos un código nuevo. Puede tardar un minuto en llegar.";
+      code = "";
+    } else {
+      code = field(form, "code");
+      const password = String(form.get("password") ?? "");
+      await allow(Astro, "reset", 20, 900);
+      await confirmForgotPassword(email, code, password);
+      // Con la contraseña recién creada se inicia sesión directamente.
+      const res = await signIn(email, password);
+      if (res.ok) startSession(Astro.cookies, res.tokens);
+      return Astro.redirect(res.ok ? next : `/ingresar${qs({ email, next: keepNext(next) })}`);
+    }
+  }
+} catch (err) {
+  error = errorMessage(err);
+  Astro.response.status = 400;
+}
+---
+<AuthLayout title="Nueva contraseña" heading="Creá una nueva contraseña" lead={`Si hay una cuenta con <strong class="text-ink">${maskEmail(email)}</strong>, te llegó un código de 6 dígitos. Escribilo y elegí tu nueva contraseña.`}>
+  {info && !error && <Notice tone="info">{info}</Notice>}
+  {error && <Notice tone="error">{error}</Notice>}
+
+  <form method="post" class="space-y-5" data-auth>
+    <input type="hidden" name="next" value={next} />
+    <input type="email" name="email" value={email} autocomplete="username" hidden />
+    <CodeField value={code} />
+    <PasswordField label="Nueva contraseña" isNew autofocus={!!code} />
+    <button type="submit" name="action" value="reset" class="btn-primary w-full text-[1.0625rem]">Guardar y entrar</button>
+  </form>
+
+  <form method="post" class="mt-6 rounded-xl bg-sand-50 p-4 text-[0.9375rem] text-slate-600 ring-1 ring-sand-200" data-auth>
+    <input type="hidden" name="next" value={next} />
+    <p>¿No te llegó? Revisá spam o promociones; puede tardar un minuto.</p>
+    <p class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+      <button type="submit" name="action" value="resend" formnovalidate data-no-busy class="font-semibold text-brand-700 hover:underline">Reenviar código</button>
+      <a class="font-semibold text-slate-600 hover:text-ink hover:underline" href={`/recuperar${qs({ next: keepNext(next) })}`}>Usar otro correo</a>
+    </p>
+  </form>
+</AuthLayout>

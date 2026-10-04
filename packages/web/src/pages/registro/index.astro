@@ -1,0 +1,65 @@
+---
+import Field from "../../components/auth/Field.astro";
+import GoogleButton from "../../components/auth/GoogleButton.astro";
+import Notice from "../../components/auth/Notice.astro";
+import PasswordField from "../../components/auth/PasswordField.astro";
+import AuthLayout from "../../layouts/AuthLayout.astro";
+import { safeNext } from "../../lib/server/auth";
+import { signUp } from "../../lib/server/cognito";
+import { config } from "../../lib/server/config";
+import { allow, errorMessage, field, isEmail, keepNext, postedForm, qs, requireCaptcha } from "../../lib/server/forms";
+
+let next = safeNext(Astro.url.searchParams.get("next"));
+if (Astro.locals.user && Astro.request.method === "GET") return Astro.redirect(next);
+
+let name = "";
+let email = Astro.url.searchParams.get("email") ?? "";
+let error: string | undefined;
+let emailError: string | undefined;
+
+try {
+  const form = await postedForm(Astro);
+  if (form) {
+    name = field(form, "name");
+    email = field(form, "email");
+    next = safeNext(field(form, "next"));
+    if (!isEmail(email)) {
+      emailError = "Escribí un correo válido, por ejemplo nombre@correo.com.";
+    } else {
+      await allow(Astro, "signup", 5, 3600);
+      await requireCaptcha(Astro, form);
+      await signUp(name, email, String(form.get("password") ?? ""));
+      return Astro.redirect(`/registro/confirmar${qs({ email, next: keepNext(next) })}`);
+    }
+    Astro.response.status = 400;
+  }
+} catch (err) {
+  error = errorMessage(err);
+  Astro.response.status = 400;
+}
+const siteKey = config.turnstileSiteKey;
+---
+<AuthLayout title="Crear cuenta" heading="Creá tu cuenta" lead="Es gratis y lleva un minuto. Podés reportar sin cuenta, pero con ella seguís tus casos desde cualquier dispositivo.">
+  {siteKey && <script slot="head" src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer is:inline></script>}
+  {error && <Notice tone="error">{error}</Notice>}
+
+  {config.googleLogin && <GoogleButton next={next} label="Registrarme con Google" />}
+
+  <form method="post" class="space-y-5" data-auth>
+    <input type="hidden" name="next" value={next} />
+    <Field label="Nombre" name="name" value={name} autocomplete="name" maxlength={80} placeholder="Cómo querés que te llamemos" hint="Opcional. No se muestra en tus reportes." autofocus />
+    <Field label="Correo electrónico" name="email" type="email" value={email} required autocomplete="email" inputmode="email" placeholder="nombre@correo.com" error={emailError} />
+    <PasswordField isNew />
+    {siteKey && <div class="cf-turnstile" data-sitekey={siteKey} data-language="es" data-theme="light" data-appearance="interaction-only"></div>}
+    <button type="submit" class="btn-primary w-full text-[1.0625rem]">Crear cuenta</button>
+    <p class="text-center text-sm text-slate-500">
+      Al crear tu cuenta aceptás los <a class="font-semibold text-ink underline decoration-sand-300 underline-offset-2 hover:decoration-ink" href="/terminos">Términos de uso</a>
+      y la <a class="font-semibold text-ink underline decoration-sand-300 underline-offset-2 hover:decoration-ink" href="/privacidad">Política de privacidad</a>.
+    </p>
+  </form>
+
+  <p class="mt-8 text-center text-[0.9375rem] text-slate-600">
+    ¿Ya tenés cuenta?
+    <a class="font-semibold text-brand-700 hover:underline" href={`/ingresar${qs({ next: keepNext(next) })}`}>Ingresá</a>
+  </p>
+</AuthLayout>

@@ -1,0 +1,26 @@
+---
+interface Props {
+  value?: string;
+  error?: string;
+}
+const { value, error } = Astro.props;
+---
+<div>
+  <label class="label" for="f-code">Código de verificación</label>
+  <input
+    class="input text-center font-mono text-[1.75rem] font-semibold tracking-[0.45em] tabular-nums"
+    id="f-code"
+    name="code"
+    value={value}
+    required
+    inputmode="numeric"
+    autocomplete="one-time-code"
+    pattern="[0-9]{6}"
+    maxlength={6}
+    placeholder="••••••"
+    aria-invalid={error ? "true" : undefined}
+    aria-describedby={error ? "f-code-error" : undefined}
+    autofocus={!value}
+  />
+  {error && <p id="f-code-error" class="mt-1.5 text-sm font-medium text-alert-600">{error}</p>}
+</div>

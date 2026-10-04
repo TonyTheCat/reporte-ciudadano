@@ -1,30 +1,57 @@
 @import "tailwindcss";
 
+/*
+ * Marca "Lapacho & Ka'aguy".
+ *   brand  → Ka'aguy (monte): verde profundo, acciones principales y navegación.
+ *   alert  → Lapacho: rosa del árbol de Asunción, la acción de reportar y los avisos.
+ *   sol    → acento cálido para destacar (nunca texto sobre blanco).
+ *   sand/ink → neutros cálidos de fondo y texto.
+ * Los mismos valores están en packages/functions/src/auth-email.ts (correos) e infra/hosted-ui.css (Cognito).
+ */
 @theme {
-  --color-brand-50: #eef5ff;
-  --color-brand-100: #d9e8ff;
-  --color-brand-500: #1f6fd1;
-  --color-brand-600: #0b5cad;
-  --color-brand-700: #0a4a8a;
-  --color-brand-900: #0a2748;
-  --color-alert-500: #d52b1e;
-  --color-alert-600: #b3241a;
+  --color-brand-50: #ecf7f3;
+  --color-brand-100: #d2ede4;
+  --color-brand-200: #a6dbc9;
+  --color-brand-300: #6fc1a7;
+  --color-brand-400: #3aa185;
+  --color-brand-500: #1a856a;
+  --color-brand-600: #0f6b55;
+  --color-brand-700: #0d5646;
+  --color-brand-800: #0c4539;
+  --color-brand-900: #0a3229;
+  --color-brand-950: #061f1a;
+  --color-alert-50: #fdf0f5;
+  --color-alert-100: #fbdde8;
+  --color-alert-200: #f6b9cf;
+  --color-alert-400: #ec6a98;
+  --color-alert-500: #d6336c;
+  --color-alert-600: #b5245a;
+  --color-alert-700: #921d49;
+  --color-sol-300: #f8d27a;
+  --color-sol-400: #f2b33d;
+  --color-sand-50: #fbf9f4;
+  --color-sand-100: #f6f3ec;
+  --color-sand-200: #ebe5d8;
+  --color-sand-300: #dad1bf;
+  --color-ink: #0e1f1b;
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Bricolage Grotesque", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 html { -webkit-tap-highlight-color: transparent; }
 /* Las islas de Astro no deben romper la cadena de alturas (mapas a pantalla completa). */
 astro-island { display: contents; }
-body { @apply bg-slate-50 text-slate-900 antialiased; }
+body { @apply bg-sand-100 text-ink antialiased; }
+h1, h2, .font-display { font-family: var(--font-display); letter-spacing: -0.02em; }
 
-@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none; }
-@utility btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-700; }
-@utility btn-alert { @apply btn bg-alert-500 text-white hover:bg-alert-600; }
-@utility btn-ghost { @apply btn bg-white text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50; }
-@utility card { @apply rounded-2xl bg-white ring-1 ring-slate-200/70 shadow-sm; }
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500; }
+@utility btn-primary { @apply btn bg-brand-600 text-white shadow-sm shadow-brand-900/10 hover:bg-brand-700; }
+@utility btn-alert { @apply btn bg-alert-500 text-white shadow-sm shadow-alert-700/20 hover:bg-alert-600; }
+@utility btn-ghost { @apply btn bg-white text-ink ring-1 ring-sand-300 hover:bg-sand-50; }
+@utility card { @apply rounded-2xl bg-white ring-1 ring-sand-200 shadow-sm shadow-ink/5; }
 @utility chip { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold; }
-@utility input { @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100; }
-@utility label { @apply mb-1 block text-sm font-semibold text-slate-700; }
+@utility input { @apply w-full rounded-xl border border-sand-300 bg-white px-3.5 py-3 text-base text-ink outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 aria-invalid:border-alert-500 aria-invalid:ring-alert-100; }
+@utility label { @apply mb-1.5 block text-sm font-semibold text-ink; }
 .prose-rc p { @apply mb-3 leading-relaxed; }
 .prose-rc h2 { @apply mt-6 mb-2 text-lg font-bold; }
 .prose-rc ul { @apply mb-3 list-disc pl-5; }

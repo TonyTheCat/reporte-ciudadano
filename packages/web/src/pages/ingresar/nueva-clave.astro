@@ -1,0 +1,37 @@
+---
+import Notice from "../../components/auth/Notice.astro";
+import PasswordField from "../../components/auth/PasswordField.astro";
+import AuthLayout from "../../layouts/AuthLayout.astro";
+import { clearChallenge, safeNext, startSession, takeChallenge } from "../../lib/server/auth";
+import { completeNewPassword } from "../../lib/server/cognito";
+import { errorMessage, field, keepNext, maskEmail, postedForm, qs } from "../../lib/server/forms";
+
+// Primer ingreso de una cuenta creada por un admin: reemplazar la contraseña temporal.
+const challenge = takeChallenge(Astro.cookies);
+let next = safeNext(Astro.url.searchParams.get("next"));
+if (!challenge) return Astro.redirect(`/ingresar${qs({ e: "vencida", next: keepNext(next) })}`);
+
+let error: string | undefined;
+try {
+  const form = await postedForm(Astro);
+  if (form) {
+    next = safeNext(field(form, "next"));
+    const tokens = await completeNewPassword(challenge.email, challenge.session, String(form.get("password") ?? ""));
+    clearChallenge(Astro.cookies);
+    startSession(Astro.cookies, tokens);
+    return Astro.redirect(next);
+  }
+} catch (err) {
+  error = errorMessage(err);
+  Astro.response.status = 400;
+}
+---
+<AuthLayout title="Elegí tu contraseña" heading="Elegí tu contraseña" lead={`Es tu primer ingreso como <strong class="text-ink">${maskEmail(challenge.email)}</strong>. Reemplazá la contraseña temporal por una que solo vos conozcas.`}>
+  {error && <Notice tone="error">{error}</Notice>}
+  <form method="post" class="space-y-5" data-auth>
+    <input type="hidden" name="next" value={next} />
+    <input type="email" name="email" value={challenge.email} autocomplete="username" hidden />
+    <PasswordField label="Nueva contraseña" isNew autofocus />
+    <button type="submit" class="btn-primary w-full text-[1.0625rem]">Guardar y entrar</button>
+  </form>
+</AuthLayout>

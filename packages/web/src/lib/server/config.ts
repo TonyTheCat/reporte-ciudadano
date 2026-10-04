@@ -26,6 +26,8 @@ export const config = {
   },
   turnstileSiteKey: process.env.PUBLIC_TURNSTILE_SITE_KEY ?? "",
   mailFrom: process.env.MAIL_FROM ?? "",
+  /** Login con Google habilitado en Cognito (lo define infra/web.ts). */
+  googleLogin: process.env.GOOGLE_LOGIN === "1",
   /** Solo para desarrollo local sin Cognito: permite entrar como admin de prueba. */
   devLogin: process.env.DEV_LOGIN === "1" && !process.env.AWS_LAMBDA_FUNCTION_NAME,
 };

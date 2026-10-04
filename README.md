@@ -13,7 +13,7 @@ Producción: https://ciudadano.tereredev.com
 | Base de datos | RDS PostgreSQL 17 + PostGIS (t4g.micro) |
 | Archivos | S3 (`uploads/` privado, `public/` servido por CloudFront en `/media`) |
 | Moderación | Lambda + Rekognition (difumina caras, filtra contenido) |
-| Auth | Cognito (Hosted UI, Google opcional), grupos `admin` y `moderador` |
+| Auth | Cognito con formularios propios (`/ingresar`, `/registro`, `/recuperar`), Google opcional vía Hosted UI, correos de marca (trigger CustomMessage), grupos `admin` y `moderador` |
 | Mapa base | OpenFreeMap (gratis, sin API key) |
 | Límites administrativos | DGEEC vía geoBoundaries (CC BY 4.0) |
 

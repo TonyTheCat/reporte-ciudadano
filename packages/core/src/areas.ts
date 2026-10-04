@@ -32,6 +32,12 @@ export async function getDepartment(slug: string, country = "PY"): Promise<Area 
   return a;
 }
 
+export async function getArea(id: number): Promise<Area | undefined> {
+  const s = sql();
+  const [a] = await s<Area[]>`${SELECT_AREA(s)} WHERE a.id = ${id}`;
+  return a;
+}
+
 export async function getDistrict(deptSlug: string, slug: string, country = "PY"): Promise<Area | undefined> {
   const s = sql();
   const [a] = await s<Area[]>`${SELECT_AREA(s)}
@@ -41,8 +47,8 @@ export async function getDistrict(deptSlug: string, slug: string, country = "PY"
 
 /** Área administrativa que contiene un punto (útil para mostrar "Asunción, Central" al reportar). */
 export async function locate(lat: number, lng: number) {
-  const rows = await sql()<{ level: number; name: string; slug: string }[]>`
-    SELECT level, name, slug FROM admin_areas
+  const rows = await sql()<{ id: number; level: number; name: string; slug: string }[]>`
+    SELECT id, level, name, slug FROM admin_areas
     WHERE ST_Intersects(geom, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)) ORDER BY level`;
   return {
     dept: rows.find((r) => r.level === 1) ?? null,

@@ -46,7 +46,10 @@ const nav = [
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
-    <meta name="theme-color" content="#0b5cad" />
+    <meta name="theme-color" content="#0f6b55" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Inter:wght@400..700&display=swap" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
@@ -66,11 +69,11 @@ const nav = [
     <slot name="head" />
   </head>
   <body class:list={[fullscreen ? "h-dvh overflow-hidden" : "min-h-dvh pb-20 md:pb-0"]}>
-    <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
+    <header class="sticky top-0 z-30 border-b border-sand-200 bg-white/85 backdrop-blur">
       <div class="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-        <a href="/" class="flex items-center gap-2 font-extrabold tracking-tight text-brand-900">
+        <a href="/" class="font-display flex items-center gap-2 text-[1.05rem] font-extrabold tracking-tight text-ink">
           <img src="/icon.svg" alt="" width="28" height="28" />
-          <span>Reporte<span class="text-alert-500">Ciudadano</span></span>
+          <span>Reporte<span class="text-brand-600">Ciudadano</span></span>
         </a>
         <nav class="ml-6 hidden gap-1 md:flex" aria-label="Principal">
           {nav.filter((n) => n.key !== "reportar").map((n) => (
@@ -88,12 +91,13 @@ const nav = [
               <div class="card absolute right-0 mt-2 w-56 p-2 text-sm">
                 <p class="truncate px-2 py-1 text-slate-500">{user.email}</p>
                 <a class="block rounded-lg px-2 py-2 hover:bg-slate-50" href="/mis-reportes">Mis reportes</a>
+                <a class="block rounded-lg px-2 py-2 hover:bg-slate-50" href="/mis-reportes#ciudad">Mi ciudad</a>
                 {user.isStaff && <a class="block rounded-lg px-2 py-2 hover:bg-slate-50" href="/admin">Panel de gestión</a>}
                 <a class="block rounded-lg px-2 py-2 text-alert-600 hover:bg-slate-50" href="/auth/logout">Salir</a>
               </div>
             </details>
           ) : (
-            <a href={`/auth/login?next=${encodeURIComponent(Astro.url.pathname)}`} class="rounded-lg px-3 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50">Ingresar</a>
+            <a href={`/ingresar?next=${encodeURIComponent(Astro.url.pathname)}`} class="rounded-lg px-3 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50">Ingresar</a>
           )}
         </div>
       </div>
@@ -104,10 +108,10 @@ const nav = [
     </main>
 
     {!fullscreen && (
-      <footer class="mt-12 border-t border-slate-200 bg-white">
+      <footer class="mt-12 border-t border-sand-200 bg-white">
         <div class="mx-auto grid max-w-6xl gap-6 px-4 py-8 text-sm text-slate-600 sm:grid-cols-3">
           <div>
-            <p class="font-bold text-slate-800">Reporte Ciudadano</p>
+            <p class="font-display font-extrabold text-ink">Reporte Ciudadano</p>
             <p class="mt-1">Mapa abierto de problemas urbanos de Paraguay, hecho por y para la ciudadanía.</p>
           </div>
           <ul class="space-y-1">
@@ -125,7 +129,7 @@ const nav = [
       </footer>
     )}
 
-    <nav class="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white md:hidden" aria-label="Navegación">
+    <nav class="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-sand-200 bg-white md:hidden" aria-label="Navegación">
       <ul class="grid grid-cols-5">
         {nav.map((n) => (
           <li>

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { STATUS_LABEL, type Status } from "@rc/core/status";
 import { ApiError, api, submitReport, type Created } from "../../lib/client/api";
 import { compressImage } from "../../lib/client/image";
-import { BASEMAP_STYLE, PY_BOUNDS, collapseAttribution } from "../../lib/client/map";
+import { ASU_BOUNDS, BASEMAP_STYLE, collapseAttribution } from "../../lib/client/map";
 import { queueReport } from "../../lib/client/outbox";
 import { timeAgo } from "../../lib/format";
 
@@ -17,7 +17,9 @@ interface Photo { blob: Blob; url: string }
 
 type Step = "category" | "location" | "details" | "done";
 
-export default function ReportWizard({ categories, turnstileSiteKey, loggedIn }: { categories: Category[]; turnstileSiteKey: string; loggedIn: boolean }) {
+export default function ReportWizard({ categories, turnstileSiteKey, loggedIn, homeBBox }: {
+  categories: Category[]; turnstileSiteKey: string; loggedIn: boolean; homeBBox?: [number, number, number, number];
+}) {
   const [step, setStep] = useState<Step>("category");
   const [category, setCategory] = useState<Category>();
   const [point, setPoint] = useState<{ lat: number; lng: number }>();
@@ -130,6 +132,7 @@ export default function ReportWizard({ categories, turnstileSiteKey, loggedIn }:
         <LocationStep
           category={category}
           initial={point ?? exifPoint}
+          homeBBox={homeBBox}
           onBack={() => setStep("category")}
           onConfirm={(p, placeName, near) => {
             setPoint(p);
@@ -248,9 +251,10 @@ export default function ReportWizard({ categories, turnstileSiteKey, loggedIn }:
   );
 }
 
-function LocationStep({ category, initial, onBack, onConfirm }: {
+function LocationStep({ category, initial, homeBBox, onBack, onConfirm }: {
   category: Category;
   initial?: { lat: number; lng: number };
+  homeBBox?: [number, number, number, number];
   onBack: () => void;
   onConfirm: (p: { lat: number; lng: number }, place: string, nearby: Nearby[]) => void;
 }) {
@@ -266,7 +270,8 @@ function LocationStep({ category, initial, onBack, onConfirm }: {
     const map = new maplibregl.Map({
       container: el.current!,
       style: BASEMAP_STYLE,
-      ...(initial ? { center: [initial.lng, initial.lat], zoom: 17 } : { bounds: PY_BOUNDS }),
+      ...(initial ? { center: [initial.lng, initial.lat], zoom: 17 }
+        : { bounds: homeBBox ? [[homeBBox[0], homeBBox[1]], [homeBBox[2], homeBBox[3]]] : ASU_BOUNDS }),
       attributionControl: { compact: true },
       dragRotate: false,
     });

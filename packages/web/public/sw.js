@@ -1,5 +1,5 @@
 // Service worker: assets con cache-first, páginas con network-first y fallback offline.
-const VERSION = "rc-v1";
+const VERSION = "rc-v2";
 const OFFLINE_URLS = ["/reportar", "/mis-reportes", "/icon.svg", "/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {

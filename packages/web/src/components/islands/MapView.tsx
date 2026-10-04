@@ -3,7 +3,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STATUS_LABEL, type Status } from "@rc/core/status";
 import { timeAgo } from "../../lib/format";
-import { addReportLayers, BASEMAP_STYLE, PY_BOUNDS, setReportFilters, STATUS_COLORS, collapseAttribution } from "../../lib/client/map";
+import { addReportLayers, ASU_BOUNDS, BASEMAP_STYLE, setReportFilters, STATUS_COLORS, collapseAttribution } from "../../lib/client/map";
 
 interface Category { slug: string; name: string; icon: string; color: string }
 interface ListItem {
@@ -17,7 +17,13 @@ const STATUS_FILTERS = [
   { value: "", label: "Todos" },
 ];
 
-export default function MapView({ categories, initial }: { categories: Category[]; initial?: { lat: number; lng: number; zoom: number } }) {
+type BBox = [number, number, number, number];
+const toBounds = (b: BBox): [[number, number], [number, number]] => [[b[0], b[1]], [b[2], b[3]]];
+
+/** Vista inicial: la URL, si no la última vista de esta pestaña, si no la ciudad del usuario, si no Asunción. */
+export default function MapView({ categories, initial, home }: {
+  categories: Category[]; initial?: { lat: number; lng: number; zoom: number }; home?: { bbox: BBox };
+}) {
   const el = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map>(undefined);
   const [category, setCategory] = useState("");
@@ -34,7 +40,8 @@ export default function MapView({ categories, initial }: { categories: Category[
     const map = new maplibregl.Map({
       container: el.current!,
       style: BASEMAP_STYLE,
-      ...(initial ? { center: [initial.lng, initial.lat], zoom: initial.zoom } : saved ? { center: saved.center, zoom: saved.zoom } : { bounds: PY_BOUNDS }),
+      ...(initial ? { center: [initial.lng, initial.lat], zoom: initial.zoom } : saved ? { center: saved.center, zoom: saved.zoom }
+        : { bounds: home ? toBounds(home.bbox) : ASU_BOUNDS, fitBoundsOptions: { padding: 24 } }),
       maxBounds: [[-66, -30], [-51, -16]],
       attributionControl: { compact: true },
       dragRotate: false,
@@ -72,7 +79,13 @@ export default function MapView({ categories, initial }: { categories: Category[
       map.on("mouseenter", layer, () => (map.getCanvas().style.cursor = "pointer"));
       map.on("mouseleave", layer, () => (map.getCanvas().style.cursor = ""));
     }
-    return () => map.remove();
+    // "Contanos de dónde sos": al guardar la ciudad, el mapa va hacia ella.
+    const onHome = (e: Event) => map.fitBounds(toBounds((e as CustomEvent<BBox>).detail), { padding: 40 });
+    window.addEventListener("rc:home", onHome);
+    return () => {
+      window.removeEventListener("rc:home", onHome);
+      map.remove();
+    };
   }, []);
 
   useEffect(() => {
@@ -175,7 +188,7 @@ function FilterChip({ active, onClick, children, color }: { active: boolean; onC
   return (
     <button onClick={onClick} aria-pressed={active}
       className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold shadow ring-1 ${active ? "text-white ring-transparent" : "bg-white text-slate-700 ring-slate-200"}`}
-      style={active ? { background: color ?? "#0b5cad" } : undefined}>
+      style={active ? { background: color ?? "#0f6b55" } : undefined}>
       {children}
     </button>
   );

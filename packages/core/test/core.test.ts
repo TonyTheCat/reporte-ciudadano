@@ -196,3 +196,65 @@ describe("infra", () => {
     expect(results).toEqual([true, true, true, false]);
   });
 });
+
+describe("categorías", () => {
+  it("el admin crea una categoría nueva con slug y claves de campos extra derivadas", async () => {
+    const { createCategory, listCategories } = await import("../src/categories");
+    const c = await createCategory({
+      name: "Obra abandonada", icon: "🏗️", color: "#AA5500", sort_order: 150,
+      extra_fields: [{ label: "Empresa responsable" }],
+    });
+    expect(c).toMatchObject({ slug: "obra-abandonada", color: "#aa5500", accepting: true,
+      extra_fields: [{ key: "empresa_responsable", label: "Empresa responsable", type: "text" }] });
+    expect((await listCategories()).map((x) => x.slug)).toContain("obra-abandonada");
+
+    const { report } = await reports.createReport(
+      { category: "obra-abandonada", title: "Obra parada hace un año", description: "", lat: -25.3, lng: -57.6,
+        extra: { empresa_responsable: "Constructora X", otro: "ignorado" } }, {});
+    expect(report.extra).toEqual({ empresa_responsable: "Constructora X" });
+  });
+
+  it("rechaza slugs repetidos y datos inválidos", async () => {
+    const { createCategory } = await import("../src/categories");
+    await expect(createCategory({ name: "Bache", icon: "🕳️", color: "#000000" })).rejects.toMatchObject({ code: "category_exists" });
+    await expect(createCategory({ name: "Color raro", icon: "x", color: "rojo" })).rejects.toThrow();
+    await expect(createCategory({ name: "Campos dobles", icon: "x", color: "#000000",
+      extra_fields: [{ label: "Calle" }, { label: "calle" }] })).rejects.toMatchObject({ code: "validation" });
+  });
+
+  it("edita una categoría sin cambiar el slug y conserva las claves de campos existentes", async () => {
+    const { updateCategory } = await import("../src/categories");
+    const c = await updateCategory("obra-abandonada", {
+      name: "Obra abandonada o paralizada", icon: "🚧", color: "#123456",
+      extra_fields: [{ key: "empresa_responsable", label: "Empresa" }, { label: "Monto" }],
+    });
+    expect(c).toMatchObject({ slug: "obra-abandonada", name: "Obra abandonada o paralizada", icon: "🚧",
+      extra_fields: [{ key: "empresa_responsable", label: "Empresa" }, { key: "monto", label: "Monto" }] });
+    await expect(updateCategory("no-existe", { name: "Nada", icon: "x", color: "#000000" })).rejects.toMatchObject({ code: "not_found" });
+  });
+});
+
+describe("ciudad del usuario", () => {
+  it("infiere la ciudad de los reportes, la guarda y la borra", async () => {
+    const { getHome, setHome, clearHome } = await import("../src/users");
+    expect(await getHome("sin-nada")).toBeUndefined();
+
+    await reports.createReport({ category: "bache", title: "Bache frente a mi casa", description: "", lat: -25.3, lng: -57.6, extra: {} }, { userId: "vecina-1" });
+    expect(await getHome("vecina-1")).toMatchObject({ source: "reportes", area: { level: 2, slug: "asuncion" } });
+
+    const [d] = await sql()<{ id: number }[]>`SELECT id FROM admin_areas WHERE level = 2 AND slug = 'asuncion'`;
+    const area = await setHome("vecina-1", d.id);
+    expect(area.bbox).toHaveLength(4);
+    expect(await getHome("vecina-1")).toMatchObject({ source: "elegida", area: { id: d.id } });
+
+    await clearHome("vecina-1");
+    expect((await getHome("vecina-1"))?.source).toBe("reportes");
+  });
+
+  it("solo acepta distritos", async () => {
+    const { setHome } = await import("../src/users");
+    const [dept] = await sql()<{ id: number }[]>`SELECT id FROM admin_areas WHERE level = 1 LIMIT 1`;
+    await expect(setHome("vecina-2", dept.id)).rejects.toMatchObject({ code: "validation" });
+    await expect(setHome("vecina-2", 999999)).rejects.toMatchObject({ code: "validation" });
+  });
+});

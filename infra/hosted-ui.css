@@ -1,0 +1,23 @@
+/*
+ * Hosted UI clásico de Cognito (solo se ve si alguien entra directo al dominio de Cognito; el sitio usa
+ * formularios propios). Cognito acepta un subconjunto de CSS: por clase solo las propiedades del ejemplo
+ * oficial; agregar otras hace fallar el deploy.
+ */
+.background-customizable { background-color: #f6f3ec; }
+.banner-customizable { padding: 28px 0px 22px 0px; background-color: #ffffff; }
+.logo-customizable { max-width: 80%; max-height: 40%; }
+.label-customizable { font-weight: 600; }
+.textDescription-customizable { padding-top: 10px; padding-bottom: 10px; display: block; font-size: 16px; }
+.idpDescription-customizable { padding-top: 10px; padding-bottom: 10px; display: block; font-size: 16px; }
+.legalText-customizable { color: #5b6b66; font-size: 12px; }
+.submitButton-customizable { font-size: 16px; font-weight: bold; margin: 20px 0px 10px 0px; height: 46px; width: 100%; color: #ffffff; background-color: #0f6b55; }
+.submitButton-customizable:hover { color: #ffffff; background-color: #0d5646; }
+.errorMessage-customizable { padding: 8px; font-size: 14px; width: 100%; background: #fdf0f5; border: 1px solid #f6b9cf; color: #921d49; }
+.inputField-customizable { width: 100%; height: 42px; color: #0e1f1b; background-color: #ffffff; border: 1px solid #dad1bf; }
+.inputField-customizable:focus { border-color: #1a856a; outline: 0; }
+.idpButton-customizable { height: 44px; width: 100%; text-align: center; margin-bottom: 15px; color: #ffffff; background-color: #0a3229; border-color: #0a3229; }
+.idpButton-customizable:hover { color: #ffffff; background-color: #0c4539; }
+.socialButton-customizable { border-radius: 12px; height: 44px; margin-bottom: 15px; padding: 1px; text-align: left; width: 100%; }
+.redirect-customizable { text-align: center; }
+.passwordCheck-notValid-customizable { color: #b5245a; }
+.passwordCheck-valid-customizable { color: #0f6b55; }

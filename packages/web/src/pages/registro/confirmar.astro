@@ -1,0 +1,62 @@
+---
+import CodeField from "../../components/auth/CodeField.astro";
+import Notice from "../../components/auth/Notice.astro";
+import AuthLayout from "../../layouts/AuthLayout.astro";
+import { safeNext } from "../../lib/server/auth";
+import { confirmSignUp, resendCode } from "../../lib/server/cognito";
+import { allow, errorMessage, field, isEmail, keepNext, maskEmail, postedForm, qs } from "../../lib/server/forms";
+
+const params = Astro.url.searchParams;
+let next = safeNext(params.get("next"));
+let email = params.get("email") ?? "";
+// El enlace del correo trae el código; si no es un código válido se ignora.
+let code = /^\d{6}$/.test(params.get("code") ?? "") ? params.get("code")! : "";
+if (!isEmail(email)) return Astro.redirect(`/registro${qs({ next: keepNext(next) })}`);
+
+let error: string | undefined;
+let info = params.get("aviso") === "pendiente" ? "Antes de ingresar tenés que confirmar tu correo. Te enviamos un código nuevo." : undefined;
+
+try {
+  const form = await postedForm(Astro);
+  if (form) {
+    next = safeNext(field(form, "next"));
+    if (form.get("action") === "resend") {
+      await allow(Astro, "resend", 5, 3600);
+      await resendCode(email);
+      info = "Te enviamos un código nuevo. Puede tardar un minuto en llegar.";
+      code = "";
+    } else {
+      code = field(form, "code");
+      await allow(Astro, "confirm", 20, 900);
+      try {
+        await confirmSignUp(email, code);
+      } catch (err) {
+        if ((err as { code?: string }).code === "ExpiredCodeException") await resendCode(email).catch(() => {});
+        throw err;
+      }
+      return Astro.redirect(`/ingresar${qs({ email, ok: "confirmada", next: keepNext(next) })}`);
+    }
+  }
+} catch (err) {
+  error = errorMessage(err);
+  Astro.response.status = 400;
+}
+---
+<AuthLayout title="Confirmá tu correo" heading="Revisá tu correo" lead={`Te enviamos un código de 6 dígitos a <strong class="text-ink">${maskEmail(email)}</strong>. Escribilo acá para activar tu cuenta.`}>
+  {info && !error && <Notice tone="info">{info}</Notice>}
+
+  <form method="post" class="space-y-5" data-auth>
+    <input type="hidden" name="next" value={next} />
+    <CodeField value={code} error={error} />
+    <button type="submit" name="action" value="confirm" class="btn-primary w-full text-[1.0625rem]">Confirmar cuenta</button>
+  </form>
+
+  <form method="post" class="mt-6 rounded-xl bg-sand-50 p-4 text-[0.9375rem] text-slate-600 ring-1 ring-sand-200" data-auth>
+    <input type="hidden" name="next" value={next} />
+    <p>¿No te llegó? Revisá la carpeta de spam o promociones.</p>
+    <p class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+      <button type="submit" name="action" value="resend" formnovalidate data-no-busy class="font-semibold text-brand-700 hover:underline">Reenviar código</button>
+      <a class="font-semibold text-slate-600 hover:text-ink hover:underline" href={`/registro${qs({ email, next: keepNext(next) })}`}>Usar otro correo</a>
+    </p>
+  </form>
+</AuthLayout>

@@ -3,7 +3,7 @@ import { getUser } from "./lib/server/auth";
 import { config } from "./lib/server/config";
 
 // Rutas cacheables públicamente: no se lee la sesión para que CloudFront pueda compartirlas.
-const PUBLIC_CACHEABLE = [/^\/tiles\//, /^\/sitemap/, /^\/robots\.txt$/, /^\/api\/stats\//, /^\/api\/categories/];
+const PUBLIC_CACHEABLE = [/^\/tiles\//, /^\/sitemap/, /^\/robots\.txt$/, /^\/api\/stats\//, /^\/api\/categories/, /^\/api\/areas$/];
 
 /**
  * CSRF: las escrituras de la API solo aceptan JSON (un formulario de otro sitio no puede enviarlo sin

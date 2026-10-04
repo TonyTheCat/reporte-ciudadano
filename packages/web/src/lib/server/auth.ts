@@ -1,6 +1,7 @@
 import type { AstroCookies } from "astro";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
 import { createHash, randomBytes } from "node:crypto";
+import { refreshIdToken, type Tokens } from "./cognito";
 import { config } from "./config";
 
 export interface User {
@@ -16,6 +17,7 @@ const ID_COOKIE = "rc_id";
 const REFRESH_COOKIE = "rc_refresh";
 const PKCE_COOKIE = "rc_pkce";
 const DEV_COOKIE = "rc_dev";
+const CHALLENGE_COOKIE = "rc_challenge";
 
 let verifier: ReturnType<typeof CognitoJwtVerifier.create> | undefined;
 function getVerifier() {
@@ -56,14 +58,15 @@ export async function getUser(cookies: AstroCookies): Promise<User | undefined> 
   }
   const refresh = cookies.get(REFRESH_COOKIE)?.value;
   if (!refresh) return undefined;
-  const tokens = await tokenRequest({ grant_type: "refresh_token", refresh_token: refresh });
-  if (!tokens?.id_token) {
+  const idToken =
+    (await refreshIdToken(refresh)) ?? (await tokenRequest({ grant_type: "refresh_token", refresh_token: refresh }))?.id_token;
+  if (!idToken) {
     cookies.delete(REFRESH_COOKIE, { path: "/" });
     return undefined;
   }
-  cookies.set(ID_COOKIE, tokens.id_token, cookieOpts(3600));
+  cookies.set(ID_COOKIE, idToken, cookieOpts(3600));
   try {
-    return toUser((await v.verify(tokens.id_token)) as any);
+    return toUser((await v.verify(idToken)) as any);
   } catch {
     return undefined;
   }
@@ -81,9 +84,30 @@ async function tokenRequest(params: Record<string, string>) {
 }
 
 const b64url = (b: Buffer) => b.toString("base64url");
-const safeNext = (next: string | null) => (next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
+export const safeNext = (next: string | null | undefined) => (next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
 
-/** URL de login del Hosted UI de Cognito con PKCE. */
+export function startSession(cookies: AstroCookies, tokens: Tokens) {
+  cookies.set(ID_COOKIE, tokens.id_token, cookieOpts(3600));
+  if (tokens.refresh_token) cookies.set(REFRESH_COOKIE, tokens.refresh_token, cookieOpts(30 * 86400));
+}
+
+/** Desafío de primer ingreso (usuario creado por un admin): se guarda unos minutos entre pasos. */
+export function setChallenge(cookies: AstroCookies, email: string, session: string) {
+  cookies.set(CHALLENGE_COOKIE, JSON.stringify({ e: email, s: session }), cookieOpts(180));
+}
+export function takeChallenge(cookies: AstroCookies): { email: string; session: string } | undefined {
+  const raw = cookies.get(CHALLENGE_COOKIE)?.value;
+  if (!raw) return undefined;
+  try {
+    const { e, s } = JSON.parse(raw);
+    return { email: e, session: s };
+  } catch {
+    return undefined;
+  }
+}
+export const clearChallenge = (cookies: AstroCookies) => cookies.delete(CHALLENGE_COOKIE, { path: "/" });
+
+/** URL del Hosted UI de Cognito con PKCE; con `provider` (p. ej. Google) salta directo al proveedor. */
 export function loginUrl(cookies: AstroCookies, next: string | null, provider?: string): string {
   const c = config.cognito;
   if (!c) return config.devLogin ? `/auth/dev?next=${encodeURIComponent(safeNext(next))}` : "/";
@@ -117,8 +141,7 @@ export async function handleCallback(cookies: AstroCookies, code: string, state:
     code_verifier: pkce.v,
   });
   if (!tokens) throw new Error("No se pudo iniciar sesión");
-  cookies.set(ID_COOKIE, tokens.id_token, cookieOpts(3600));
-  if (tokens.refresh_token) cookies.set(REFRESH_COOKIE, tokens.refresh_token, cookieOpts(30 * 86400));
+  startSession(cookies, tokens);
   return pkce.n;
 }
 

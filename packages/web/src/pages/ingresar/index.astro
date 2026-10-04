@@ -1,0 +1,83 @@
+---
+import Field from "../../components/auth/Field.astro";
+import GoogleButton from "../../components/auth/GoogleButton.astro";
+import Notice from "../../components/auth/Notice.astro";
+import PasswordField from "../../components/auth/PasswordField.astro";
+import AuthLayout from "../../layouts/AuthLayout.astro";
+import { safeNext, setChallenge, startSession } from "../../lib/server/auth";
+import { resendCode, signIn } from "../../lib/server/cognito";
+import { config } from "../../lib/server/config";
+import { allow, errorMessage, field, keepNext, postedForm, qs } from "../../lib/server/forms";
+
+const params = Astro.url.searchParams;
+let next = safeNext(params.get("next"));
+if (Astro.locals.user && Astro.request.method === "GET") return Astro.redirect(next);
+
+let email = params.get("email") ?? "";
+let error: string | undefined;
+
+const SUCCESS: Record<string, string> = {
+  confirmada: "¡Listo! Tu correo quedó confirmado. Ingresá con tu contraseña.",
+};
+const ERRORS: Record<string, string> = {
+  externo: "No pudimos completar el ingreso con Google. Probá de nuevo o usá tu correo.",
+  vencida: "Pasó demasiado tiempo. Volvé a ingresar con tu contraseña temporal.",
+};
+const success = SUCCESS[params.get("ok") ?? ""];
+error = ERRORS[params.get("e") ?? ""];
+
+try {
+  const form = await postedForm(Astro);
+  if (form) {
+    email = field(form, "email");
+    next = safeNext(field(form, "next"));
+    await allow(Astro, "login", 20, 900);
+    const res = await signIn(email, String(form.get("password") ?? ""));
+    if (res.ok) {
+      startSession(Astro.cookies, res.tokens);
+      return Astro.redirect(next);
+    }
+    if ("challenge" in res) {
+      setChallenge(Astro.cookies, email, res.session);
+      return Astro.redirect(`/ingresar/nueva-clave${qs({ next: keepNext(next) })}`);
+    }
+    if (res.error.code === "UserNotConfirmedException") {
+      await resendCode(email).catch(() => {});
+      return Astro.redirect(`/registro/confirmar${qs({ email, next: keepNext(next), aviso: "pendiente" })}`);
+    }
+    throw res.error;
+  }
+} catch (err) {
+  error = errorMessage(err);
+  Astro.response.status = 400;
+}
+---
+<AuthLayout title="Ingresar" heading="Hola de nuevo" lead="Ingresá para seguir tus reportes y recibir avisos cuando cambien de estado.">
+  {success && <Notice tone="success">{success}</Notice>}
+  {error && <Notice tone="error">{error}</Notice>}
+
+  {config.googleLogin && <GoogleButton next={next} />}
+
+  <form method="post" class="space-y-5" data-auth>
+    <input type="hidden" name="next" value={next} />
+    <Field label="Correo electrónico" name="email" type="email" value={email} required autocomplete="email" inputmode="email" autofocus={!email} placeholder="nombre@correo.com" />
+    <PasswordField autofocus={!!email} aside={{ href: `/recuperar${qs({ email: email || undefined })}`, label: "¿La olvidaste?" }} />
+    <button type="submit" class="btn-primary w-full text-[1.0625rem]">Ingresar</button>
+  </form>
+
+  <p class="mt-8 text-center text-[0.9375rem] text-slate-600">
+    ¿Todavía no tenés cuenta?
+    <a class="font-semibold text-brand-700 hover:underline" href={`/registro${qs({ next: keepNext(next) })}`}>Creá una gratis</a>
+  </p>
+
+  {config.devLogin && (
+    <div class="mt-8 rounded-xl border border-dashed border-sand-300 p-4 text-sm text-slate-600">
+      <p class="font-semibold text-ink">Modo desarrollo</p>
+      <p class="mt-1">Sin Cognito local. Entrá como usuario de prueba:</p>
+      <div class="mt-3 flex gap-2">
+        <a class="btn-ghost py-2 text-sm" href={`/auth/dev?as=admin&next=${encodeURIComponent(next)}`}>Admin</a>
+        <a class="btn-ghost py-2 text-sm" href={`/auth/dev?as=vecino&next=${encodeURIComponent(next)}`}>Vecino</a>
+      </div>
+    </div>
+  )}
+</AuthLayout>

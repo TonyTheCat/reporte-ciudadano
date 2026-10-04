@@ -1,15 +1,24 @@
 ---
 import { listReports } from "@rc/core/reports";
+import HomePicker from "../components/islands/HomePicker";
 import MyReports from "../components/islands/MyReports";
 import ReportList from "../components/ReportList.astro";
 import Base from "../layouts/Base.astro";
+import { homeFor } from "../lib/server/home";
 
 const user = Astro.locals.user;
+const home = await homeFor(user);
 const mine = user ? await listReports({ userId: user.id, visibility: "any", limit: 100 }) : [];
 ---
 <Base title="Mis casos" noindex active="mis">
   <div class="mx-auto max-w-3xl space-y-6 px-4 py-6">
     <h1 class="text-3xl font-extrabold">Mis casos</h1>
+    {user && (
+      <section id="ciudad">
+        <h2 class="mb-2 text-lg font-bold">Contanos de dónde sos</h2>
+        <HomePicker client:only="react" home={home} variant="settings" />
+      </section>
+    )}
     {user ? (
       <section>
         <h2 class="mb-2 text-lg font-bold">Reportes de mi cuenta</h2>
@@ -18,7 +27,7 @@ const mine = user ? await listReports({ userId: user.id, visibility: "any", limi
     ) : (
       <div class="card flex flex-wrap items-center justify-between gap-3 p-4">
         <p class="text-slate-700">Iniciá sesión para ver tus reportes en cualquier dispositivo y recibir avisos cuando cambien de estado.</p>
-        <a href="/auth/login?next=/mis-reportes" class="btn-primary py-2">Ingresar</a>
+        <a href="/ingresar?next=/mis-reportes" class="btn-primary py-2">Ingresar</a>
       </div>
     )}
     <section>

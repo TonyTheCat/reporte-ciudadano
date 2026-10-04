@@ -1,0 +1,156 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  heading: string;
+  lead?: string;
+}
+
+const { title, heading, lead } = Astro.props;
+---
+<!doctype html>
+<html lang="es-PY">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{`${title} · Reporte Ciudadano`}</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#0a3229" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Inter:wght@400..700&display=swap" />
+    <slot name="head" />
+  </head>
+  <body class="min-h-dvh">
+    <div class="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+      <!-- Panel de marca: solo en pantallas grandes. -->
+      <aside class="relative hidden overflow-hidden bg-brand-900 text-white lg:flex lg:flex-col" aria-hidden="true">
+        <svg class="absolute inset-0 h-full w-full" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" fill="none">
+          <g stroke="#0f6b55" stroke-width="1.4" opacity=".55">
+            <path d="M-40 120c120 30 180-20 300 10s200 90 380 40" />
+            <path d="M-40 210c140 20 200-40 320-5s180 110 360 60" />
+            <path d="M-40 300c110 40 230-30 330 10s210 80 350 30" />
+            <path d="M-40 390c150 10 190-50 330 0s170 120 350 70" />
+            <path d="M-40 480c120 40 220-20 320 20s200 70 360 20" />
+            <path d="M-40 570c140 20 210-40 330 0s190 100 350 50" />
+            <path d="M-40 660c110 30 230-30 330 15s200 80 350 35" />
+          </g>
+          <g stroke="#1a856a" stroke-width="10" stroke-linecap="round" opacity=".35">
+            <path d="M120 -20 170 330 140 820" />
+            <path d="M-20 520 260 470 640 560" />
+            <path d="M380 -20 420 300 520 820" />
+          </g>
+          <g>
+            <circle cx="520" cy="250" r="44" stroke="#ec6a98" stroke-width="2" opacity=".5" />
+            <circle cx="520" cy="250" r="66" stroke="#ec6a98" stroke-width="1.5" opacity=".25" />
+            <path d="M520 220c-12 0-22 9.6-22 21.6 0 16.3 22 37.4 22 37.4s22-21.1 22-37.4c0-12-10-21.6-22-21.6z" fill="#fff" />
+            <circle cx="520" cy="241" r="8" fill="#d6336c" />
+            <path d="M555 540c-9 0-16.5 7.2-16.5 16.2 0 12.2 16.5 28 16.5 28s16.5-15.8 16.5-28c0-9-7.5-16.2-16.5-16.2z" fill="#fff" opacity=".9" />
+            <circle cx="555" cy="556" r="6" fill="#f2b33d" />
+            <path d="M490 420c-9 0-16.5 7.2-16.5 16.2 0 12.2 16.5 28 16.5 28s16.5-15.8 16.5-28c0-9-7.5-16.2-16.5-16.2z" fill="#fff" opacity=".9" />
+            <circle cx="490" cy="436" r="6" fill="#3aa185" />
+          </g>
+        </svg>
+
+        <div class="relative flex flex-1 flex-col justify-between p-12 xl:p-16">
+          <a href="/" class="font-display flex items-center gap-3 text-xl font-extrabold tracking-tight" tabindex="-1">
+            <img src="/icon.svg" alt="" width="40" height="40" />
+            <span>Reporte<span class="text-brand-300">Ciudadano</span></span>
+          </a>
+
+          <div class="max-w-md">
+            <p class="font-display text-[2.75rem] leading-[1.05] font-extrabold tracking-tight xl:text-5xl">
+              Tu barrio,<br />en el <span class="text-sol-400">mapa</span>.
+            </p>
+            <p class="mt-4 text-lg text-brand-100/90">Reportá lo que ves en la calle y seguí cada caso hasta que se resuelva.</p>
+
+            <div class="mt-10 rounded-2xl bg-white/95 p-5 text-ink shadow-2xl shadow-black/30">
+              <div class="flex items-center gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-alert-50">
+                  <svg width="18" height="22" viewBox="0 0 28 34"><path d="M14 0C6.3 0 0 6.1 0 13.7 0 24 14 34 14 34s14-10 14-20.3C28 6.1 21.7 0 14 0z" fill="#d6336c" /><circle cx="14" cy="13.5" r="5" fill="#fff" /></svg>
+                </span>
+                <div class="min-w-0">
+                  <p class="truncate font-semibold">Bache en Av. Mcal. López</p>
+                  <p class="text-sm text-slate-500">Asunción · Vialidad · hace 3 días</p>
+                </div>
+              </div>
+              <ol class="mt-5 grid grid-cols-3 gap-2 text-xs font-semibold">
+                <li class="rounded-lg bg-brand-50 px-2 py-1.5 text-brand-700">✓ Recibido</li>
+                <li class="rounded-lg bg-brand-50 px-2 py-1.5 text-brand-700">✓ En proceso</li>
+                <li class="rounded-lg bg-sol-300/40 px-2 py-1.5 text-ink">● Resuelto</li>
+              </ol>
+            </div>
+          </div>
+
+          <p class="text-sm text-brand-200/80">Mapa abierto, hecho por y para la ciudadanía de Paraguay.</p>
+        </div>
+      </aside>
+
+      <main class="flex flex-col px-5 py-6 sm:px-10 sm:py-10">
+        <a href="/" class="font-display flex items-center gap-2.5 text-lg font-extrabold tracking-tight text-ink lg:hidden">
+          <img src="/icon.svg" alt="" width="34" height="34" />
+          <span>Reporte<span class="text-brand-600">Ciudadano</span></span>
+        </a>
+
+        <div class="mx-auto flex w-full max-w-[26rem] flex-1 flex-col justify-center py-10">
+          <h1 class="text-[2rem] leading-tight font-extrabold text-ink">{heading}</h1>
+          {lead && <p class="mt-2 text-[1.0625rem] leading-relaxed text-slate-600" set:html={lead} />}
+          <div class="mt-8">
+            <slot />
+          </div>
+        </div>
+
+        <nav class="mx-auto flex w-full max-w-[26rem] flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500" aria-label="Enlaces legales">
+          <a class="inline-flex items-center gap-1 font-semibold text-brand-700 hover:underline" href="/">← Volver al mapa</a>
+          <a class="ml-auto hover:text-ink hover:underline" href="/privacidad">Privacidad</a>
+          <a class="hover:text-ink hover:underline" href="/terminos">Términos</a>
+        </nav>
+      </main>
+    </div>
+
+    <script>
+      // Botón de envío en estado "cargando" para evitar dobles envíos.
+      document.querySelectorAll<HTMLFormElement>("form[data-auth]").forEach((form) => {
+        form.addEventListener("submit", (e) => {
+          const btn = (e.submitter as HTMLButtonElement | null) ?? form.querySelector<HTMLButtonElement>("button[type=submit]");
+          if (!btn || btn.dataset.noBusy !== undefined) return;
+          btn.setAttribute("aria-busy", "true");
+          // Se deshabilita después del envío para que el valor del botón viaje con el formulario.
+          setTimeout(() => (btn.disabled = true));
+        });
+      });
+      // Mostrar/ocultar contraseña.
+      document.querySelectorAll<HTMLButtonElement>("[data-toggle-password]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const input = document.getElementById(btn.dataset.togglePassword!) as HTMLInputElement;
+          const show = input.type === "password";
+          input.type = show ? "text" : "password";
+          btn.textContent = show ? "Ocultar" : "Mostrar";
+        });
+      });
+      // Indicador de largo mínimo para contraseñas nuevas.
+      document.querySelectorAll<HTMLInputElement>("input[data-min-hint]").forEach((input) => {
+        const hint = document.getElementById(input.dataset.minHint!);
+        const update = () => hint?.toggleAttribute("data-ok", input.value.length >= input.minLength);
+        input.addEventListener("input", update);
+        update();
+      });
+    </script>
+    <style is:global>
+      button[aria-busy="true"] { position: relative; color: transparent !important; }
+      button[aria-busy="true"]::after {
+        content: ""; position: absolute; inset: 0; margin: auto; width: 1.25rem; height: 1.25rem;
+        border-radius: 9999px; border: 2.5px solid rgb(255 255 255 / .45); border-top-color: #fff;
+        animation: rc-spin .7s linear infinite;
+      }
+      @keyframes rc-spin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { button[aria-busy="true"]::after { animation-duration: 2s; } }
+      [data-ok] .rc-check { background: var(--color-brand-600); color: #fff; border-color: transparent; }
+      [data-ok] { color: var(--color-brand-700); }
+    </style>
+  </body>
+</html>

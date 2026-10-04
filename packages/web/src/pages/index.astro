@@ -1,14 +1,18 @@
 ---
 import { listCategories } from "@rc/core/categories";
+import HomePicker from "../components/islands/HomePicker";
 import MapView from "../components/islands/MapView";
 import Base from "../layouts/Base.astro";
 import { config } from "../lib/server/config";
+import { homeFor } from "../lib/server/home";
 
 const categories = (await listCategories()).map(({ slug, name, icon, color }) => ({ slug, name, icon, color }));
 const p = Astro.url.searchParams;
 const lat = Number(p.get("lat")), lng = Number(p.get("lng")), z = Number(p.get("z") ?? 15);
 const initial = Number.isFinite(lat) && Number.isFinite(lng) && p.has("lat") ? { lat, lng, zoom: z } : undefined;
 const error = p.get("e");
+const user = Astro.locals.user;
+const home = await homeFor(user);
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -26,5 +30,6 @@ const jsonLd = {
       {error === "permisos" ? "No tenés permisos para esa sección." : "No se pudo iniciar sesión. Probá de nuevo."}
     </p>
   )}
-  <MapView client:only="react" categories={categories} initial={initial} />
+  <MapView client:only="react" categories={categories} initial={initial} home={home ?? undefined} />
+  {user && <HomePicker client:only="react" home={home} variant="prompt" />}
 </Base>

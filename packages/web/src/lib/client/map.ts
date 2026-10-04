@@ -3,6 +3,8 @@ import type { Map as MLMap } from "maplibre-gl";
 // OpenFreeMap: teselas vectoriales de OSM gratuitas y sin API key.
 export const BASEMAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
 export const PY_CENTER: [number, number] = [-57.58, -25.3];
+// Vista inicial por defecto (y para quien todavía no nos contó de dónde es).
+export const ASU_BOUNDS: [[number, number], [number, number]] = [[-57.68, -25.38], [-57.52, -25.21]];
 export const PY_BOUNDS: [[number, number], [number, number]] = [[-62.8, -27.7], [-54.2, -19.2]];
 
 export const STATUS_COLORS: Record<string, string> = {
@@ -24,7 +26,7 @@ export function addReportLayers(map: MLMap, filters: { category?: string; status
   map.addLayer({
     id: "clusters", type: "circle", source: "reports", "source-layer": "clusters",
     paint: {
-      "circle-color": ["case", [">=", ["/", ["get", "resolved"], ["max", ["get", "count"], 1]], 0.5], "#2f9e44", "#d52b1e"],
+      "circle-color": ["case", [">=", ["/", ["get", "resolved"], ["max", ["get", "count"], 1]], 0.5], "#2f9e44", "#d6336c"],
       "circle-opacity": 0.85,
       "circle-radius": ["interpolate", ["linear"], ["get", "count"], 1, 12, 10, 18, 100, 26, 1000, 36],
       "circle-stroke-width": 3, "circle-stroke-color": "#fff",

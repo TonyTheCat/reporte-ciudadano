@@ -25,13 +25,14 @@ export function createWeb(opts: {
   router.routeBucket("/media", opts.media, { rewrite: { regex: "^/media/(.*)$", to: "/public/$1" } });
 
   const siteUrl = useDomain ? `https://${DOMAIN}` : router.url;
-  const auth = createAuth(siteUrl);
 
   // SES: se habilita con SES_ENABLED=1 una vez cargados en Hostinger los registros de verificación/DKIM
-  // (el deploy espera a que el dominio esté verificado). Sin SES los avisos quedan en los logs.
+  // (el deploy espera a que el dominio esté verificado). Sin SES los avisos quedan en los logs y los
+  // correos de cuenta salen del remitente de Cognito.
   const email = $app.stage === "production" && process.env.SES_ENABLED === "1"
     ? new sst.aws.Email("Email", { sender: DOMAIN, dns: false })
     : undefined;
+  const auth = createAuth(siteUrl, email);
 
   const web = new sst.aws.Astro("Web", {
     path: "packages/web",
@@ -41,6 +42,7 @@ export function createWeb(opts: {
     environment: {
       SITE_URL: siteUrl,
       COGNITO_HOSTED_UI: auth.hostedUi,
+      GOOGLE_LOGIN: auth.googleEnabled ? "1" : "",
       IP_SALT: ipSalt.result,
       PUBLIC_TURNSTILE_SITE_KEY: process.env.PUBLIC_TURNSTILE_SITE_KEY ?? "",
       MAIL_FROM: email ? `Reporte Ciudadano <avisos@${DOMAIN}>` : "",
