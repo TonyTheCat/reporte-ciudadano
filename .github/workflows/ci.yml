@@ -41,3 +41,5 @@ jobs:
         run: pnpm test
       - name: Tests de functions
         run: pnpm --filter @rc/functions test
+      - name: Tests de web
+        run: pnpm --filter @rc/web test

@@ -148,6 +148,20 @@ index 56f8303cc0c9ab45a578efa84b2755f754d3b59c..00000000000000000000000000000000
 diff --git a/dist/entrypoint.js b/dist/entrypoint.js
 deleted file mode 100644
 index dedb206e4f16572da83ecc736912c51f685d0d76..0000000000000000000000000000000000000000
+diff --git a/dist/lib/binary.js b/dist/lib/binary.js
+index 6da9ece1d2ebe993f47a1d5fce04cc75f86fa6ad..486cf322afc5cb5c834f27ca72356dc982aaf739 100644
+--- a/dist/lib/binary.js
++++ b/dist/lib/binary.js
+@@ -54,6 +54,9 @@ const commonBinaryMimeTypes = new Set([
+     "application/x-tar",
+     "application/x-zip",
+     "application/zip",
++    // Map tiles
++    "application/vnd.mapbox-vector-tile",
++    "application/x-protobuf",
+ ]);
+ export function isBinaryContentType(contentType) {
+     if (!contentType)
 diff --git a/dist/lib/entrypoint-utils.js b/dist/lib/entrypoint-utils.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..779527b3eaab1984d9b9836a6bdd5315d43b3bef
@@ -180,10 +194,10 @@ index 0000000000000000000000000000000000000000..779527b3eaab1984d9b9836a6bdd5315
 +    return new Request(requestUrl, requestProps);
 +}
 diff --git a/package.json b/package.json
-index 274ab59b5d00b9ca80cba9b4c94ba448a0ec01f3..7547ea462391927d548123c6a03775c17773a845 100644
+index 274ab59b5d00b9ca80cba9b4c94ba448a0ec01f3..db0112b4df5436a0c9e01bf0483b773841a23289 100644
 --- a/package.json
 +++ b/package.json
-@@ -20,7 +20,8 @@
+@@ -20,8 +20,10 @@
    "bugs": "https://github.com/sst/astro-sst/issues",
    "exports": {
      ".": "./dist/adapter.js",
@@ -191,5 +205,7 @@ index 274ab59b5d00b9ca80cba9b4c94ba448a0ec01f3..7547ea462391927d548123c6a03775c1
 +    "./entrypoint/buffer": "./dist/entrypoint/buffer.js",
 +    "./entrypoint/stream": "./dist/entrypoint/stream.js",
      "./build-meta": "./dist/lib/build-meta.js",
++    "./event-mapper": "./dist/lib/event-mapper.js",
      "./package.json": "./package.json"
    },
+   "typesVersions": {
