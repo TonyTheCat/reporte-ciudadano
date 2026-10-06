@@ -1,0 +1,38 @@
+name: Reportar un error
+description: Algo no funciona como debería
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "¿Es una falla de seguridad? No la publiques acá: seguí [SECURITY.md](../blob/main/SECURITY.md)."
+  - type: textarea
+    id: que-paso
+    attributes:
+      label: Qué pasó
+      description: Qué hiciste, qué esperabas y qué pasó en cambio.
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para reproducirlo
+      placeholder: |
+        1. Entrar a /reportar
+        2. Elegir "Bache"
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: URL o código del reporte
+      placeholder: https://ciudadano.tereredev.com/r/PY-2026-000123
+  - type: input
+    id: dispositivo
+    attributes:
+      label: Dispositivo y navegador
+      placeholder: Android 15, Chrome 130
+  - type: textarea
+    id: capturas
+    attributes:
+      label: Capturas o errores de la consola

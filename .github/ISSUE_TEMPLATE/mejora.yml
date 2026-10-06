@@ -1,0 +1,19 @@
+name: Proponer una mejora
+description: Una idea, una categoría nueva o un cambio en cómo funciona algo
+labels: [mejora]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Qué problema resuelve
+      description: Contanos la situación concreta, no solo la solución.
+    validations:
+      required: true
+  - type: textarea
+    id: propuesta
+    attributes:
+      label: Propuesta
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternativas que consideraste
