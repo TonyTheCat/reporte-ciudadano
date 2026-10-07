@@ -1,11 +1,15 @@
 import { reportTile } from "@rc/core/tiles";
 import type { APIRoute } from "astro";
+import { handle } from "../../../../lib/server/http";
+import { nonEmptyParams, reportQuerySchema } from "../../../../lib/server/report-query";
+
+const tileQuerySchema = reportQuerySchema.pick({ category: true, status: true });
 
 // /tiles/{z}/{x}/{y}.pbf?category=&status=  — cacheado 60 s en CloudFront.
-export const GET: APIRoute = async (ctx) => {
+export const GET: APIRoute = handle(async (ctx) => {
   const z = Number(ctx.params.z), x = Number(ctx.params.x), y = Number(String(ctx.params.y).replace(/\.pbf$/, ""));
-  const p = ctx.url.searchParams;
-  const tile = await reportTile(z, x, y, { category: p.get("category") ?? undefined, status: p.get("status") ?? undefined });
+  const filters = tileQuerySchema.parse(nonEmptyParams(ctx.url.searchParams));
+  const tile = await reportTile(z, x, y, filters);
   if (tile === null) return new Response("Tile inválido", { status: 400 });
   return new Response(tile.length ? new Uint8Array(tile) : null, {
     status: tile.length ? 200 : 204,
@@ -18,4 +22,4 @@ export const GET: APIRoute = async (ctx) => {
       "Access-Control-Allow-Origin": "*",
     },
   });
-};
+});

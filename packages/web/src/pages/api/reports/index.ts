@@ -4,6 +4,7 @@ import { createReport, createReportSchema, listReports, reportPath } from "@rc/c
 import type { APIRoute } from "astro";
 import { z } from "zod";
 import { clientIp, error, handle, ipHash, json } from "../../../lib/server/http";
+import { nonEmptyParams, reportQuerySchema } from "../../../lib/server/report-query";
 import { presignUpload, verifyTurnstile } from "../../../lib/server/services";
 
 const bodySchema = createReportSchema.extend({
@@ -32,15 +33,7 @@ export const POST: APIRoute = handle(async (ctx) => {
 });
 
 export const GET: APIRoute = handle(async (ctx) => {
-  const p = ctx.url.searchParams;
-  const bbox = p.get("bbox")?.split(",").map(Number);
-  const rows = await listReports({
-    bbox: bbox?.length === 4 && bbox.every(Number.isFinite) ? (bbox as [number, number, number, number]) : undefined,
-    category: p.get("category") ?? undefined,
-    status: (p.get("status") as any) ?? undefined,
-    q: p.get("q")?.slice(0, 80) ?? undefined,
-    limit: Number(p.get("limit") ?? 30),
-  });
+  const rows = await listReports(reportQuerySchema.parse(nonEmptyParams(ctx.url.searchParams)));
   return json(
     rows.map((r) => ({
       code: r.public_code, path: reportPath(r), title: r.title, status: r.status, category: r.category_slug,

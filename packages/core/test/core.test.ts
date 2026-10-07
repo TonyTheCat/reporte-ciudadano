@@ -176,6 +176,8 @@ describe("GIS", () => {
     const clusters = await reportTile(...tile(5));
     expect(clusters!.toString("latin1")).toContain("clusters");
     expect(await reportTile(3, 99, 0)).toBeNull();
+    expect(await reportTile(Number.NaN, 0, 0)).toBeNull();
+    expect(await reportTile(3, 1.5, 0)).toBeNull();
   });
 
   it("ubica un punto en su departamento y distrito", async () => {

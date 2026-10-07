@@ -5,7 +5,7 @@ import { sql } from "./db";
  * En zoom bajo se agrupan en una grilla (capa "clusters") para no enviar miles de puntos.
  */
 export async function reportTile(z: number, x: number, y: number, f: { category?: string; status?: string } = {}) {
-  if (z < 0 || z > 22 || x < 0 || y < 0 || x >= 2 ** z || y >= 2 ** z) return null;
+  if (![z, x, y].every(Number.isInteger) || z < 0 || z > 22 || x < 0 || y < 0 || x >= 2 ** z || y >= 2 ** z) return null;
   const s = sql();
   const cat = f.category ? s`AND c.slug = ${f.category}` : s``;
   const st =
