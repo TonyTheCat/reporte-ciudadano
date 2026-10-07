@@ -381,7 +381,7 @@ function LocationStep({ category, initial, homeBBox, onBack, onConfirm }: {
       <p className="mt-2 min-h-5 text-sm font-semibold text-slate-700">{place}</p>
       {noMap ? (
         <p className="text-sm text-slate-600">
-          Sin conexión no podemos mostrar el mapa. {gps
+          {navigator.onLine ? "No pudimos cargar el mapa." : "Sin conexión no podemos mostrar el mapa."} {gps
             ? `Vamos a usar la ubicación de tu teléfono (precisión de unos ${Math.round(gps.accuracy)} m): parate cerca del problema.`
             : initial
               ? "Vamos a usar el lugar que ya habías marcado, o tocá “Mi ubicación” para usar el GPS."
