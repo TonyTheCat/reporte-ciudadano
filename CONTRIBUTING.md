@@ -33,6 +33,7 @@ git switch -c feat/filtro-por-barrio
 pnpm typecheck
 pnpm test
 pnpm --filter @rc/functions test
+pnpm --filter @rc/web test
 
 # 4. Commit y push
 git push -u origin feat/filtro-por-barrio
@@ -60,7 +61,7 @@ Usá el cuerpo para explicar **por qué**, no qué (eso ya lo dice el diff).
 ### Pull requests
 
 - **Uno por tema.** Un PR chico se revisa en minutos; uno enorme se queda semanas.
-- **El CI tiene que pasar**: typecheck, tests de `core` contra PostGIS y tests de `functions`.
+- **El CI tiene que pasar**: typecheck, tests de `core` contra PostGIS y tests de `functions` y `web`.
 - **Tests**: si cambiás lógica de `packages/core` o `packages/functions`, agregá o ajustá tests.
 - **Capturas** si cambia algo visible, en celular y escritorio.
 - **Migraciones**: archivo nuevo numerado; nunca edites uno ya mergeado.

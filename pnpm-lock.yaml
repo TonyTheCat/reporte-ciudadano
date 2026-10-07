@@ -9,7 +9,7 @@ overrides:
   source-map-js: ^1.2.2
 
 patchedDependencies:
-  astro-sst@3.1.4: 012453c6fd586787f26c2b6933d850990b9f0600cea508aa28f6abe4c81e29d2
+  astro-sst@3.1.4: 97416cd315e3a88e8f7e5d122eefbc81e1451f3f456d6027942c243e9f212583
 
 importers:
 
@@ -109,7 +109,7 @@ importers:
         version: 7.3.5(@types/node@24.19.0)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
       astro-sst:
         specifier: 3.1.4
-        version: 3.1.4(patch_hash=012453c6fd586787f26c2b6933d850990b9f0600cea508aa28f6abe4c81e29d2)
+        version: 3.1.4(patch_hash=97416cd315e3a88e8f7e5d122eefbc81e1451f3f456d6027942c243e9f212583)
       aws-jwt-verify:
         specifier: ^5.2.1
         version: 5.2.1
@@ -153,6 +153,9 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@types/node@24.19.0)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
 packages:
 
@@ -4298,7 +4301,7 @@ snapshots:
 
   assertion-error@2.0.1: {}
 
-  astro-sst@3.1.4(patch_hash=012453c6fd586787f26c2b6933d850990b9f0600cea508aa28f6abe4c81e29d2):
+  astro-sst@3.1.4(patch_hash=97416cd315e3a88e8f7e5d122eefbc81e1451f3f456d6027942c243e9f212583):
     dependencies:
       set-cookie-parser: 2.7.2
 

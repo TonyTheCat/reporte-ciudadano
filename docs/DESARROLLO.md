@@ -110,6 +110,7 @@ Desde la raíz:
 | `pnpm db:seed [-- --demo]` | Carga áreas administrativas (y reportes de ejemplo) |
 | `pnpm test` | Tests de dominio y GIS (`packages/core`) contra PostGIS |
 | `pnpm --filter @rc/functions test` | Tests de las Lambdas (imágenes, correos) |
+| `pnpm --filter @rc/web test` | Tests de la web (respuestas a través del adaptador de Lambda) |
 | `pnpm typecheck` | `tsc` en core y functions, `astro check` en web |
 | `pnpm dev` | `sst dev` (necesita AWS) |
 | `pnpm run deploy` | Despliega a producción (ver DESPLIEGUE.md) |
@@ -122,6 +123,7 @@ En `packages/web`: `pnpm dev`, `pnpm build`, `pnpm preview`.
 pnpm db:up
 pnpm test                            # core: 19 tests, ~4 s
 pnpm --filter @rc/functions test     # functions: sin base, < 1 s
+pnpm --filter @rc/web test           # web: sin base, < 1 s
 pnpm typecheck
 ```
 
@@ -131,8 +133,9 @@ Qué cubren:
 
 - **core**: creación de reportes y asignación automática de departamento/distrito, transiciones de estado, duplicados cercanos, confirmaciones y denuncias, tiles MVT, estadísticas y consultas por polígono, reserva de fotos, rate limiting.
 - **functions**: decisión de moderación según etiquetas de Rekognition, difuminado de caras, y que los correos de Cognito incluyan el código, escapen datos y no pasen el límite de 20.000 caracteres.
+- **web**: que los tiles MVT lleguen intactos a través del adaptador de Lambda (`astro-sst` solo codifica en base64 los tipos que reconoce como binarios; el resto lo manda como texto y corrompe los bytes).
 
-El CI corre exactamente estos tres comandos en cada pull request.
+El CI corre exactamente estos cuatro comandos en cada pull request.
 
 ## Migraciones
 
