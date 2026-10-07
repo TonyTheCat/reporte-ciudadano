@@ -366,7 +366,7 @@ function LocationStep({ category, initial, homeBBox, onBack, onConfirm }: {
         <button className="btn-ghost px-3 py-2" onClick={onBack} aria-label="Volver">←</button>
         <div>
           <h1 className="text-xl font-extrabold">¿Dónde está?</h1>
-          <p className="text-sm text-slate-500">Mové el mapa para que el pin quede sobre el problema.</p>
+          <p className="text-sm text-slate-500">{noMap ? "Usá el GPS de tu teléfono para marcar el lugar." : "Mové el mapa para que el pin quede sobre el problema."}</p>
         </div>
       </div>
       <div className="relative h-[55dvh] overflow-hidden rounded-2xl ring-1 ring-slate-200">
