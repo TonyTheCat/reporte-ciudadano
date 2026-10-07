@@ -9,10 +9,38 @@ const OFFLINE_PAGES = ["/reportar", "/mis-reportes"];
 const anonymous = (url) => new Request(url, { credentials: "omit" });
 const isPrivate = (res) => /private|no-store/i.test(res.headers.get("Cache-Control") ?? "");
 
+// Referencias a archivos del build: en el HTML ("/_astro/x.js") y entre chunks ("./x.js" y "_astro/x.js",
+// que es como Vite nombra los import() dinámicos, p. ej. exifr).
+const ASSET_REF = /(?:\/_astro\/|["'`]_astro\/|["'`]\.\/)([\w$.-]+\.(?:js|css))/g;
+const assetRefs = (text) => [...text.matchAll(ASSET_REF)].map((m) => `/_astro/${m[1]}`);
+
+// Guarda los archivos que usan las páginas offline y, recorriendo los scripts, todo lo que importan.
+// Sin esto, una página guardada abre sin conexión pero su asistente no carga o falla a mitad de camino.
+async function cacheAssets(cache, urls) {
+  const seen = new Set();
+  let queue = urls;
+  while (queue.length) {
+    const next = [];
+    await Promise.all([...new Set(queue)].filter((u) => !seen.has(u)).map(async (u) => {
+      seen.add(u);
+      let res = await cache.match(u);
+      if (!res) {
+        res = await fetch(u);
+        if (!res.ok) return;
+        await cache.put(u, res.clone());
+      }
+      if (u.endsWith(".js")) next.push(...assetRefs(await res.text()));
+    }));
+    queue = next;
+  }
+}
+
 async function refreshOfflinePages(cache) {
   await Promise.all(OFFLINE_PAGES.map(async (path) => {
     const res = await fetch(anonymous(path));
-    if (res.ok && !isPrivate(res)) await cache.put(path, res);
+    if (!res.ok || isPrivate(res)) return;
+    await cacheAssets(cache, assetRefs(await res.clone().text()));
+    await cache.put(path, res);
   }));
 }
 
