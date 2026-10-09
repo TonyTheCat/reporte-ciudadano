@@ -13,7 +13,10 @@ interface Category {
   extra_fields: { key: string; label: string }[];
 }
 interface Nearby { id: string; code: string; path: string; title: string; status: Status; distance_m: number; confirmations: number; created_at: string }
-interface Photo { blob: Blob; url: string }
+interface Photo { blob: Blob; url: string; gps?: { lat: number; lng: number } }
+
+// Si la foto se sacó más lejos que esto del punto marcado, se ofrece usar su ubicación.
+const PHOTO_LOCATION_MIN_M = 30;
 
 type Step = "category" | "location" | "details" | "done";
 
@@ -29,7 +32,6 @@ export default function ReportWizard({ categories, turnstileSiteKey, loggedIn, h
   const [description, setDescription] = useState("");
   const [extra, setExtra] = useState<Record<string, string>>({});
   const [photos, setPhotos] = useState<Photo[]>([]);
-  const [exifPoint, setExifPoint] = useState<{ lat: number; lng: number }>();
   const [busy, setBusy] = useState<string>("");
   const [err, setErr] = useState("");
   const [created, setCreated] = useState<Created & { queued?: boolean }>();
@@ -49,25 +51,25 @@ export default function ReportWizard({ categories, turnstileSiteKey, loggedIn, h
     window.scrollTo({ top: 0 });
   }
 
-  async function addPhotos(files: FileList | null) {
-    if (!files) return;
+  async function addPhotos(files: File[]) {
     setErr("");
     const room = 4 - photos.length;
-    for (const file of Array.from(files).slice(0, room)) {
+    for (const file of files.slice(0, room)) {
       if (!file.type.startsWith("image/")) continue;
       try {
-        if (!exifPoint) {
-          const { gps } = await import("exifr");
-          const g = await gps(file).catch(() => null);
-          if (g?.latitude && g?.longitude) setExifPoint({ lat: g.latitude, lng: g.longitude });
-        }
+        const gps = await photoLocation(file);
         const blob = await compressImage(file);
-        setPhotos((p) => [...p, { blob, url: URL.createObjectURL(blob) }].slice(0, 4));
+        setPhotos((p) => [...p, { blob, url: URL.createObjectURL(blob), gps }].slice(0, 4));
       } catch {
         setErr("No pudimos leer una de las fotos. Probá con otra.");
       }
     }
   }
+
+  // Ubicación guardada en la primera foto que la tenga (se lee antes de comprimir, que borra el EXIF).
+  const photoPoint = photos.find((p) => p.gps)?.gps;
+  const photoPointFar = !!photoPoint && !!point
+    && new maplibregl.LngLat(photoPoint.lng, photoPoint.lat).distanceTo(new maplibregl.LngLat(point.lng, point.lat)) > PHOTO_LOCATION_MIN_M;
 
   async function submit() {
     if (!category || !point) return;
@@ -131,7 +133,7 @@ export default function ReportWizard({ categories, turnstileSiteKey, loggedIn, h
       {step === "location" && category && (
         <LocationStep
           category={category}
-          initial={point ?? exifPoint}
+          initial={point ?? photoPoint}
           homeBBox={homeBBox}
           onBack={() => setStep("category")}
           onConfirm={(p, placeName, near) => {
@@ -185,11 +187,24 @@ export default function ReportWizard({ categories, turnstileSiteKey, loggedIn, h
                 <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 text-slate-500 hover:border-brand-500">
                   <span className="text-2xl">📷</span>
                   <span className="text-[11px] font-semibold">Agregar</span>
-                  <input type="file" accept="image/*" capture="environment" multiple className="sr-only" onChange={(e) => addPhotos(e.target.files)} />
+                  <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => {
+                    // Se vacía el input para que volver a elegir el mismo archivo dispare `change` otra vez.
+                    const files = Array.from(e.target.files ?? []);
+                    e.target.value = "";
+                    addPhotos(files);
+                  }} />
                 </label>
               )}
             </div>
             <p className="mt-1 text-xs text-slate-500">Las caras se difuminan automáticamente y se borra la información oculta de la foto.</p>
+            {photoPointFar && (
+              <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-sand-50 p-3 text-sm text-ink ring-1 ring-sand-300">
+                <p>La foto se sacó en otro lugar del que marcaste.</p>
+                <button className="chip shrink-0 bg-brand-600 text-white" onClick={() => { setPoint(photoPoint); setStep("location"); }}>
+                  Usar ubicación de la foto
+                </button>
+              </div>
+            )}
           </div>
 
           <div>
@@ -358,6 +373,17 @@ function LocationStep({ category, initial, homeBBox, onBack, onConfirm }: {
       </button>
     </section>
   );
+}
+
+/** Coordenadas GPS del EXIF, si las tiene. Es opcional: si falla (p. ej. sin conexión para cargar `exifr`), la foto se agrega igual. */
+async function photoLocation(file: File): Promise<{ lat: number; lng: number } | undefined> {
+  try {
+    const { gps } = await import("exifr");
+    const g = await gps(file);
+    return g?.latitude && g?.longitude ? { lat: g.latitude, lng: g.longitude } : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function ConfirmExisting({ id, path }: { id: string; path: string }) {
