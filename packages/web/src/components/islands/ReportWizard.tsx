@@ -280,6 +280,10 @@ function LocationStep({ category, initial, homeBBox, onBack, onConfirm }: {
   const [locating, setLocating] = useState(false);
   const [geoErr, setGeoErr] = useState("");
   const [checking, setChecking] = useState(false);
+  // Sin conexión el mapa base no carga: se marca el lugar con el GPS del teléfono.
+  const [mapReady, setMapReady] = useState(false);
+  const [mapFailed, setMapFailed] = useState(false);
+  const [gps, setGps] = useState<{ lat: number; lng: number; accuracy: number }>();
 
   useEffect(() => {
     const map = new maplibregl.Map({
@@ -297,8 +301,12 @@ function LocationStep({ category, initial, homeBBox, onBack, onConfirm }: {
       const c = map.getCenter();
       setCenter({ lat: c.lat, lng: c.lng });
     };
-    map.on("load", update);
+    map.on("load", () => {
+      setMapReady(true);
+      update();
+    });
     map.on("moveend", update);
+    map.on("error", () => setMapFailed(true));
     if (!initial) locate();
     return () => map.remove();
   }, []);
@@ -318,30 +326,35 @@ function LocationStep({ category, initial, homeBBox, onBack, onConfirm }: {
   }, [center?.lat, center?.lng]);
 
   function locate() {
-    if (!navigator.geolocation) return setGeoErr("Tu navegador no permite ubicarte. Mové el mapa hasta el lugar.");
+    if (!navigator.geolocation) return setGeoErr("Tu navegador no permite ubicarte.");
     setLocating(true);
     setGeoErr("");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocating(false);
+        setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
         mapRef.current?.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 17 });
       },
       () => {
         setLocating(false);
-        setGeoErr("No pudimos obtener tu ubicación. Mové el mapa hasta el lugar del problema.");
+        setGeoErr("No pudimos obtener tu ubicación.");
       },
       { enableHighAccuracy: true, timeout: 10000 },
     );
   }
 
   const zoomOk = (mapRef.current?.getZoom() ?? 0) >= 14;
+  const noMap = !mapReady && (mapFailed || !navigator.onLine);
+  // Con mapa vale el centro (donde está el pin); sin mapa, el GPS o el lugar que ya estaba marcado.
+  const chosen = noMap ? (gps ?? initial) : zoomOk ? center : undefined;
 
   async function confirm() {
-    if (!center) return;
+    if (!chosen) return;
+    const p = { lat: chosen.lat, lng: chosen.lng };
     setChecking(true);
     try {
-      const near = await api<Nearby[]>(`/api/reports/nearby?lat=${center.lat}&lng=${center.lng}&category=${category.slug}`).catch(() => []);
-      onConfirm(center, place, near);
+      const near = await api<Nearby[]>(`/api/reports/nearby?lat=${p.lat}&lng=${p.lng}&category=${category.slug}`).catch(() => []);
+      onConfirm(p, place, near);
     } finally {
       setChecking(false);
     }
@@ -353,7 +366,7 @@ function LocationStep({ category, initial, homeBBox, onBack, onConfirm }: {
         <button className="btn-ghost px-3 py-2" onClick={onBack} aria-label="Volver">←</button>
         <div>
           <h1 className="text-xl font-extrabold">¿Dónde está?</h1>
-          <p className="text-sm text-slate-500">Mové el mapa para que el pin quede sobre el problema.</p>
+          <p className="text-sm text-slate-500">{noMap ? "Usá el GPS de tu teléfono para marcar el lugar." : "Mové el mapa para que el pin quede sobre el problema."}</p>
         </div>
       </div>
       <div className="relative h-[55dvh] overflow-hidden rounded-2xl ring-1 ring-slate-200">
@@ -366,9 +379,19 @@ function LocationStep({ category, initial, homeBBox, onBack, onConfirm }: {
         </button>
       </div>
       <p className="mt-2 min-h-5 text-sm font-semibold text-slate-700">{place}</p>
-      {geoErr && <p className="text-sm text-amber-700">{geoErr}</p>}
-      {!zoomOk && <p className="text-sm text-slate-500">Acercá el mapa para marcar el lugar con precisión.</p>}
-      <button className="btn-primary mt-3 w-full" disabled={!center || !zoomOk || checking} onClick={confirm}>
+      {noMap ? (
+        <p className="text-sm text-slate-600">
+          {navigator.onLine ? "No pudimos cargar el mapa." : "Sin conexión no podemos mostrar el mapa."} {gps
+            ? `Vamos a usar la ubicación de tu teléfono (precisión de unos ${Math.round(gps.accuracy)} m): parate cerca del problema.`
+            : initial
+              ? "Vamos a usar el lugar que ya habías marcado, o tocá “Mi ubicación” para usar el GPS."
+              : "Tocá “Mi ubicación” para usar el GPS de tu teléfono."}
+        </p>
+      ) : (
+        !zoomOk && <p className="text-sm text-slate-500">Acercá el mapa para marcar el lugar con precisión.</p>
+      )}
+      {geoErr && <p className="text-sm text-amber-700">{geoErr} {noMap ? "Revisá que el GPS esté activado y probá de nuevo." : "Mové el mapa hasta el lugar del problema."}</p>}
+      <button className="btn-primary mt-3 w-full" disabled={!chosen || checking} onClick={confirm}>
         {checking ? "Verificando…" : "Confirmar ubicación"}
       </button>
     </section>

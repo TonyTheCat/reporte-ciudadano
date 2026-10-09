@@ -60,7 +60,25 @@ export function setReportFilters(map: MLMap, filters: { category?: string; statu
 
 /** En pantallas chicas la atribución arranca expandida y tapa el mapa; se muestra colapsada (ícono ⓘ). */
 export function collapseAttribution(map: MLMap) {
-  const collapse = () => map.getContainer().querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
-  map.once("load", collapse);
-  map.once("idle", collapse);
+  // Se cierra apenas aparece abierta, cuando llega el texto de las fuentes. Esperar a "load" no alcanza: sin
+  // conexión (estilo en la caché HTTP, tiles que fallan) nunca llega, y abierta tapa los botones del mapa.
+  const collapse = () => {
+    const el = map.getContainer().querySelector(".maplibregl-ctrl-attrib");
+    if (!el?.classList.contains("maplibregl-compact-show")) return;
+    el.classList.remove("maplibregl-compact-show");
+    stop();
+  };
+  const stop = () => {
+    map.off("styledata", collapse);
+    map.off("sourcedata", collapse);
+    map.off("idle", last);
+  };
+  // En pantallas anchas no hay modo compacto: en el primer "idle" se revisa una última vez y se deja de mirar.
+  const last = () => {
+    collapse();
+    stop();
+  };
+  map.on("styledata", collapse);
+  map.on("sourcedata", collapse);
+  map.on("idle", last);
 }
