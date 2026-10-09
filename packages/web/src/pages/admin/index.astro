@@ -4,19 +4,28 @@ import { listCategories } from "@rc/core/categories";
 import { listReports } from "@rc/core/reports";
 import { STATUS_LABEL, STATUSES } from "@rc/core/status";
 import { summary } from "@rc/core/stats";
+import { z } from "zod";
 import AdminNav from "../../components/AdminNav.astro";
+import Notice from "../../components/auth/Notice.astro";
 import ReportList from "../../components/ReportList.astro";
 import Base from "../../layouts/Base.astro";
+import { nonEmptyParams, reportQuerySchema, slugParam } from "../../lib/server/report-query";
+
+const adminQuerySchema = reportQuerySchema.pick({ category: true, status: true, q: true }).extend({
+  dept: slugParam.optional(),
+  visibility: z.enum(["published", "pending", "hidden", "any"]).default("any"),
+  before: z.coerce.date().optional(),
+});
 
 const p = Astro.url.searchParams;
-const status = (p.get("status") ?? "abiertos") as any;
-const visibility = (p.get("visibility") ?? "any") as any;
-const dept = p.get("dept") ?? undefined;
-const category = p.get("category") ?? undefined;
-const q = p.get("q") ?? undefined;
-const before = p.get("before") ? new Date(p.get("before")!) : undefined;
+const parsed = adminQuerySchema.safeParse(nonEmptyParams(p));
+if (!parsed.success) Astro.response.status = 400;
+const f = parsed.success ? parsed.data : adminQuerySchema.parse({});
+// Sin `status` se muestran los abiertos; `?status=` (vacío) es "Todos los estados".
+const status = p.has("status") ? f.status : "abiertos";
+const { visibility, dept, category, q, before } = f;
 const [reports, depts, cats, s] = await Promise.all([
-  listReports({ status: status || undefined, visibility, deptSlug: dept, category, q, before, limit: 50 }),
+  parsed.success ? listReports({ status, visibility, deptSlug: dept, category, q, before, limit: 50 }) : [],
   listDepartments(), listCategories(), summary(),
 ]);
 const nextPage = reports.length === 50 ? new URLSearchParams({ ...Object.fromEntries(p), before: reports.at(-1)!.created_at.toISOString() }) : null;
@@ -43,7 +52,11 @@ const nextPage = reports.length === 50 ? new URLSearchParams({ ...Object.fromEnt
       <select name="category" class="input py-2"><option value="">Todas</option>{cats.map((c) => <option value={c.slug} selected={category === c.slug}>{c.name}</option>)}</select>
       <button class="btn-primary py-2">Filtrar</button>
     </form>
-    <ReportList reports={reports} admin empty="No hay reportes con esos filtros." />
+    {parsed.success ? (
+      <ReportList reports={reports} admin empty="No hay reportes con esos filtros." />
+    ) : (
+      <Notice tone="error">Algún filtro de la dirección no es válido. Elegí los filtros de nuevo.</Notice>
+    )}
     {nextPage && <a class="btn-ghost mt-4 w-full" href={`?${nextPage}`}>Ver más antiguos</a>}
   </div>
 </Base>
