@@ -34,7 +34,7 @@ const nextPage = reports.length === 50 ? new URLSearchParams({ ...Object.fromEnt
   <div class="mx-auto max-w-5xl px-4 py-6">
     <h1 class="mb-3 text-2xl font-extrabold">Gestión de reportes</h1>
     <AdminNav active="bandeja" />
-    <p class="mb-4 text-sm text-slate-600">{s.total} publicados · <b class="text-alert-600">{s.open} abiertos</b> · {s.resolved} resueltos</p>
+    <p class="mb-4 text-sm text-fg-muted">{s.total} publicados · <b class="text-alert-fg">{s.open} abiertos</b> · {s.resolved} resueltos</p>
     <form class="card mb-4 grid gap-2 p-3 sm:grid-cols-5" method="get">
       <input name="q" value={q} placeholder="Buscar título o código" class="input py-2 sm:col-span-5" />
       <select name="status" class="input py-2">

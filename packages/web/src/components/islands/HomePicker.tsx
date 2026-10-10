@@ -131,14 +131,14 @@ export default function HomePicker({ home: initialHome, variant }: { home: Home 
     return (
       <div className="card space-y-3 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-slate-700">
+          <p className="text-fg-muted">
             {home?.source === "elegida" ? <>Tu ciudad: <b>{home.name}</b>. El mapa abre ahí.</>
               : <>Todavía no nos contaste de dónde sos{home ? <> (por tus reportes, parece <b>{home.name}</b>)</> : null}. Mientras tanto, el mapa abre en {home?.name ?? "Asunción"}.</>}
           </p>
           {!picking && (
             <div className="flex gap-2">
               <button className="btn-ghost py-2 text-sm" onClick={() => setPicking(true)}>{home?.source === "elegida" ? "Cambiar" : "Elegir mi ciudad"}</button>
-              {home?.source === "elegida" && <button className="btn-ghost py-2 text-sm text-alert-600" onClick={remove}>Quitar</button>}
+              {home?.source === "elegida" && <button className="btn-ghost py-2 text-sm text-alert-fg" onClick={remove}>Quitar</button>}
             </div>
           )}
         </div>
@@ -148,7 +148,7 @@ export default function HomePicker({ home: initialHome, variant }: { home: Home 
             {picker}
           </>
         )}
-        {msg && <p className="text-sm text-slate-600" role="status">{msg}</p>}
+        {msg && <p className="text-sm text-fg-muted" role="status">{msg}</p>}
       </div>
     );
   }
@@ -159,9 +159,9 @@ export default function HomePicker({ home: initialHome, variant }: { home: Home 
       <section className="card pointer-events-auto w-full max-w-sm space-y-3 p-4 shadow-lg" aria-label="Contanos de dónde sos">
         <div>
           <h2 className="font-display text-lg font-extrabold">Contanos de dónde sos</h2>
-          <p className="text-sm text-slate-600">Así el mapa abre en tu ciudad cada vez que entrás.</p>
+          <p className="text-sm text-fg-muted">Así el mapa abre en tu ciudad cada vez que entrás.</p>
         </div>
-        {msg && <p className="text-sm font-semibold text-brand-700" role="status">{msg}</p>}
+        {msg && <p className="text-sm font-semibold text-accent" role="status">{msg}</p>}
         {!picking && suggested && (
           <button className="btn-primary w-full py-2.5 text-sm" disabled={!!busy} onClick={() => save(suggested.id)}>Soy de {suggested.name}</button>
         )}
@@ -171,9 +171,9 @@ export default function HomePicker({ home: initialHome, variant }: { home: Home 
           </button>
         )}
         {picking ? picker : (
-          <button className="w-full text-sm font-semibold text-brand-700 hover:underline" onClick={() => setPicking(true)}>Elegir de la lista</button>
+          <button className="w-full text-sm font-semibold text-accent hover:underline" onClick={() => setPicking(true)}>Elegir de la lista</button>
         )}
-        <button className="w-full text-xs text-slate-500 hover:underline" onClick={later}>Ahora no</button>
+        <button className="w-full text-xs text-fg-subtle hover:underline" onClick={later}>Ahora no</button>
       </section>
     </div>
   );

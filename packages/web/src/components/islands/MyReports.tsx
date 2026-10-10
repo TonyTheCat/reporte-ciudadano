@@ -18,16 +18,16 @@ export default function MyReports() {
         <input className="input" placeholder="Buscar por código (PY-2026-000123)" value={code} onChange={(e) => setCode(e.target.value)} aria-label="Código de seguimiento" />
         <button className="btn-primary">Buscar</button>
       </form>
-      {pending > 0 && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">{pending} reporte(s) esperando conexión para enviarse.</p>}
+      {pending > 0 && <p className="rounded-xl bg-warning-soft p-3 text-sm text-warning">{pending} reporte(s) esperando conexión para enviarse.</p>}
       {items.length === 0 ? (
-        <p className="text-slate-500">Todavía no hiciste reportes desde este dispositivo.</p>
+        <p className="text-fg-subtle">Todavía no hiciste reportes desde este dispositivo.</p>
       ) : (
-        <ul className="card divide-y divide-slate-100">
+        <ul className="card divide-y divide-line">
           {items.map((r) => (
             <li key={r.id}>
-              <a href={r.path} className="block p-4 hover:bg-slate-50">
+              <a href={r.path} className="block p-4 hover:bg-surface-2">
                 <p className="font-semibold">{r.title}</p>
-                <p className="text-sm text-slate-500"><span className="font-mono">{r.code}</span> · {timeAgo(r.created_at)}</p>
+                <p className="text-sm text-fg-subtle"><span className="font-mono">{r.code}</span> · {timeAgo(r.created_at)}</p>
               </a>
             </li>
           ))}

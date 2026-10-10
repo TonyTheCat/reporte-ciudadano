@@ -16,16 +16,16 @@ const editable = (c: (typeof cats)[number]) => ({
   <div class="mx-auto max-w-5xl px-4 py-6">
     <h1 class="mb-3 text-2xl font-extrabold">Categorías</h1>
     <AdminNav active="categorias" />
-    <p class="mb-4 text-sm text-slate-600">Definí una ventana de fechas para habilitar una categoría solo en ese período (por ejemplo, “Propaganda electoral fuera de fecha” desde el día siguiente a las elecciones). Sin fechas, la categoría está siempre activa. Para dar de baja una categoría, poné una fecha “Hasta”: los reportes existentes se conservan.</p>
+    <p class="mb-4 text-sm text-fg-muted">Definí una ventana de fechas para habilitar una categoría solo en ese período (por ejemplo, “Propaganda electoral fuera de fecha” desde el día siguiente a las elecciones). Sin fechas, la categoría está siempre activa. Para dar de baja una categoría, poné una fecha “Hasta”: los reportes existentes se conservan.</p>
     {isAdmin && <div class="mb-4"><CategoryEditor client:load /></div>}
-    <ul class="card divide-y divide-slate-100">
+    <ul class="card divide-y divide-line">
       {cats.map((c) => (
         <li class="flex flex-wrap items-center justify-between gap-3 p-4">
           <div class="flex items-center gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg ring-2 ring-white shadow" style={`background:${c.color}`} aria-hidden="true">{c.icon}</span>
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg ring-2 ring-surface shadow" style={`background:${c.color}`} aria-hidden="true">{c.icon}</span>
             <div>
-              <p class="font-semibold">{c.name} <span class="text-xs font-normal text-slate-400">#{c.sort_order}</span></p>
-              <p class:list={["text-xs", c.accepting ? "text-green-700" : "text-slate-500"]}>{c.accepting ? "Recibe reportes" : "Cerrada ahora"}</p>
+              <p class="font-semibold">{c.name} <span class="text-xs font-normal text-fg-subtle">#{c.sort_order}</span></p>
+              <p class:list={["text-xs", c.accepting ? "text-success" : "text-fg-subtle"]}>{c.accepting ? "Recibe reportes" : "Cerrada ahora"}</p>
             </div>
           </div>
           <div class="flex flex-wrap items-end gap-2">

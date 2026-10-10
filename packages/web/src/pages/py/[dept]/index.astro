@@ -18,11 +18,11 @@ const title = dept.slug === "asuncion" ? "Asunción" : `Departamento de ${dept.n
 ---
 <Base title={`Reportes en ${title}`} description={`${s.total} problemas urbanos reportados en ${title}: ${s.open} abiertos y ${s.resolved} resueltos. Baches, raudales, basura, inseguridad y más.`} active="zonas">
   <div class="mx-auto max-w-5xl space-y-6 px-4 py-6">
-    <nav class="text-sm text-slate-500"><a href="/py" class="hover:underline">Paraguay</a> › {dept.name}</nav>
+    <nav class="text-sm text-fg-subtle"><a href="/py" class="hover:underline">Paraguay</a> › {dept.name}</nav>
     <header class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1 class="text-3xl font-extrabold">{title}</h1>
-        <p class="text-slate-600">Problemas reportados por la ciudadanía y su estado.</p>
+        <p class="text-fg-muted">Problemas reportados por la ciudadanía y su estado.</p>
       </div>
       <a href={`/?lat=${(dept.bbox[1] + dept.bbox[3]) / 2}&lng=${(dept.bbox[0] + dept.bbox[2]) / 2}&z=9`} class="btn-ghost py-2 text-sm">Ver en el mapa</a>
     </header>
@@ -34,7 +34,7 @@ const title = dept.slug === "asuncion" ? "Asunción" : `Departamento de ${dept.n
         {districts.map((d) => {
           const c = byId.get(d.id);
           return (
-            <li><a href={`/py/${dept.slug}/${d.slug}`} class="card flex justify-between p-3 text-sm hover:ring-brand-500"><span class="font-semibold">{d.name}</span><span class="text-slate-500">{c?.total ?? 0} · <span class="text-alert-600">{c?.open ?? 0} abiertos</span></span></a></li>
+            <li><a href={`/py/${dept.slug}/${d.slug}`} class="card flex justify-between p-3 text-sm hover:ring-brand-500"><span class="font-semibold">{d.name}</span><span class="text-fg-subtle">{c?.total ?? 0} · <span class="text-alert-fg">{c?.open ?? 0} abiertos</span></span></a></li>
           );
         })}
       </ul>

@@ -32,10 +32,10 @@ export default function AdminReportPanel({ id, status, visibility, next }: { id:
     <div className="space-y-5">
       <section className="card space-y-3 p-4">
         <h2 className="font-bold">Cambiar estado</h2>
-        <p className="text-sm text-slate-500">Actual: <b>{STATUS_LABEL[status]}</b></p>
+        <p className="text-sm text-fg-subtle">Actual: <b>{STATUS_LABEL[status]}</b></p>
         <div className="flex flex-wrap gap-2">
           {next.map((s) => (
-            <button key={s} onClick={() => setTo(s)} className={`chip px-3 py-1.5 text-sm ${to === s ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-700"}`}>{STATUS_LABEL[s]}</button>
+            <button key={s} onClick={() => setTo(s)} className={`chip px-3 py-1.5 text-sm ${to === s ? "bg-brand-600 text-white" : "bg-fill text-fg-muted"}`}>{STATUS_LABEL[s]}</button>
           ))}
         </div>
         {to === "duplicado" && <input className="input" placeholder="Código del reporte original (PY-2026-…)" value={dup} onChange={(e) => setDup(e.target.value)} />}
@@ -74,7 +74,7 @@ export default function AdminReportPanel({ id, status, visibility, next }: { id:
 
       <section className="card space-y-3 p-4">
         <h2 className="font-bold">Visibilidad</h2>
-        <p className="text-sm text-slate-500">Actual: <b>{visibility}</b></p>
+        <p className="text-sm text-fg-subtle">Actual: <b>{visibility}</b></p>
         <div className="grid grid-cols-3 gap-2">
           {(["published", "pending", "hidden"] as const).map((v) => (
             <button key={v} disabled={busy || v === visibility} onClick={() => run(() => post({ action: "visibility", visibility: v }), "Visibilidad actualizada")}

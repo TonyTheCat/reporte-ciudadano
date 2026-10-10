@@ -26,7 +26,7 @@ const jsonLd = {
 <Base title="Reporte Ciudadano" active="mapa" fullscreen jsonLd={jsonLd}>
   <h1 class="sr-only">Mapa de problemas urbanos reportados por la ciudadanía en Paraguay</h1>
   {error && (
-    <p class="absolute top-24 left-1/2 z-30 -translate-x-1/2 rounded-xl bg-red-600 px-4 py-2 text-sm text-white shadow" role="alert">
+    <p class="absolute top-24 left-1/2 z-30 -translate-x-1/2 rounded-xl bg-danger-solid px-4 py-2 text-sm text-white shadow" role="alert">
       {error === "permisos" ? "No tenés permisos para esa sección." : "No se pudo iniciar sesión. Probá de nuevo."}
     </p>
   )}

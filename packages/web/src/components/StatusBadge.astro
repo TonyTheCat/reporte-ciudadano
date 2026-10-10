@@ -2,4 +2,4 @@
 import { STATUS_COLOR, STATUS_LABEL, type Status } from "@rc/core/status";
 const { status } = Astro.props as { status: Status };
 ---
-<span class="chip" style={`background:${STATUS_COLOR[status]}1f;color:${STATUS_COLOR[status]}`}>{STATUS_LABEL[status]}</span>
+<span class="chip tint" style={`--tint:${STATUS_COLOR[status]}`}>{STATUS_LABEL[status]}</span>

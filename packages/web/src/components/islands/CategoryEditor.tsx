@@ -58,7 +58,7 @@ export default function CategoryEditor({ initial }: { initial?: CategoryData }) 
   return (
     <form onSubmit={(e) => { e.preventDefault(); save(); }} className="card w-full space-y-4 p-4">
       <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full text-xl ring-2 ring-white shadow" style={{ background: color }} aria-hidden>{icon}</span>
+        <span className="flex h-10 w-10 items-center justify-center rounded-full text-xl ring-2 ring-surface shadow" style={{ background: color }} aria-hidden>{icon}</span>
         <p className="font-bold">{editing ? `Editar “${initial.name}”` : "Nueva categoría"}</p>
       </div>
 
@@ -66,10 +66,10 @@ export default function CategoryEditor({ initial }: { initial?: CategoryData }) 
         <div>
           <label className="label" htmlFor="cat-name">Nombre</label>
           <input id="cat-name" className="input" required minLength={2} maxLength={60} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej.: Obra abandonada" />
-          {editing && <p className="mt-1 text-xs text-slate-500">Identificador fijo: <code>{initial.slug}</code></p>}
+          {editing && <p className="mt-1 text-xs text-fg-subtle">Identificador fijo: <code>{initial.slug}</code></p>}
         </div>
         <div>
-          <label className="label" htmlFor="cat-desc">Descripción <span className="font-normal text-slate-400">(opcional)</span></label>
+          <label className="label" htmlFor="cat-desc">Descripción <span className="font-normal text-fg-subtle">(opcional)</span></label>
           <input id="cat-desc" className="input" maxLength={200} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Se muestra al elegir la categoría" />
         </div>
       </div>
@@ -80,7 +80,7 @@ export default function CategoryEditor({ initial }: { initial?: CategoryData }) 
           <input id="cat-icon" className="input w-20 text-center text-xl" required maxLength={16} value={icon} onChange={(e) => setIcon(e.target.value)} />
           {ICONS.map((i) => (
             <button type="button" key={i} onClick={() => setIcon(i)}
-              className={`h-9 w-9 rounded-lg text-lg hover:bg-sand-100 ${icon === i ? "ring-2 ring-brand-500" : ""}`}>{i}</button>
+              className={`h-9 w-9 rounded-lg text-lg hover:bg-surface-2 ${icon === i ? "ring-2 ring-brand-500" : ""}`}>{i}</button>
           ))}
         </div>
       </div>
@@ -89,24 +89,24 @@ export default function CategoryEditor({ initial }: { initial?: CategoryData }) 
         <div>
           <label className="label" htmlFor="cat-color">Color del marcador</label>
           <div className="flex items-center gap-2">
-            <input id="cat-color" type="color" className="h-11 w-14 cursor-pointer rounded-lg border border-sand-300" value={color} onChange={(e) => setColor(e.target.value)} />
+            <input id="cat-color" type="color" className="h-11 w-14 cursor-pointer rounded-lg border border-line-strong" value={color} onChange={(e) => setColor(e.target.value)} />
             <input className="input" pattern="#[0-9a-fA-F]{6}" value={color} onChange={(e) => setColor(e.target.value)} aria-label="Color hexadecimal" />
           </div>
         </div>
         <div>
           <label className="label" htmlFor="cat-order">Orden</label>
           <input id="cat-order" type="number" min={0} max={9999} className="input" value={order} onChange={(e) => setOrder(e.target.value)} />
-          <p className="mt-1 text-xs text-slate-500">Menor aparece primero. “Otros” usa 999.</p>
+          <p className="mt-1 text-xs text-fg-subtle">Menor aparece primero. “Otros” usa 999.</p>
         </div>
       </div>
 
       <div>
-        <p className="label">Campos extra <span className="font-normal text-slate-400">(opcional, texto libre)</span></p>
+        <p className="label">Campos extra <span className="font-normal text-fg-subtle">(opcional, texto libre)</span></p>
         <div className="space-y-2">
           {fields.map((f, i) => (
             <div key={i} className="flex items-center gap-2">
               <input className="input py-2" maxLength={60} value={f.label} onChange={(e) => setField(i, e.target.value)} placeholder="Ej.: Empresa responsable" />
-              {f.key && <code className="shrink-0 text-xs text-slate-500">{f.key}</code>}
+              {f.key && <code className="shrink-0 text-xs text-fg-subtle">{f.key}</code>}
               <button type="button" className="btn-ghost py-2 text-sm" onClick={() => setFields(fields.filter((_, j) => j !== i))} aria-label="Quitar campo">✕</button>
             </div>
           ))}
@@ -116,7 +116,7 @@ export default function CategoryEditor({ initial }: { initial?: CategoryData }) 
         </div>
       </div>
 
-      {err && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{err}</p>}
+      {err && <p className="rounded-xl bg-danger-soft p-3 text-sm text-danger" role="alert">{err}</p>}
 
       <div className="flex gap-2">
         <button className="btn-primary" disabled={busy}>{busy ? "Guardando…" : editing ? "Guardar cambios" : "Crear categoría"}</button>

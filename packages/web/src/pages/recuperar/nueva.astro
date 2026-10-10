@@ -42,7 +42,7 @@ try {
 }
 ---
 <AuthLayout title="Nueva contraseña" heading="Creá una nueva contraseña">
-  <Fragment slot="lead">Si hay una cuenta con <strong class="text-ink">{maskEmail(email)}</strong>, te llegó un código de 6 dígitos. Escribilo y elegí tu nueva contraseña.</Fragment>
+  <Fragment slot="lead">Si hay una cuenta con <strong class="text-fg">{maskEmail(email)}</strong>, te llegó un código de 6 dígitos. Escribilo y elegí tu nueva contraseña.</Fragment>
   {info && !error && <Notice tone="info">{info}</Notice>}
   {error && <Notice tone="error">{error}</Notice>}
 
@@ -54,12 +54,12 @@ try {
     <button type="submit" name="action" value="reset" class="btn-primary w-full text-[1.0625rem]">Guardar y entrar</button>
   </form>
 
-  <form method="post" class="mt-6 rounded-xl bg-sand-50 p-4 text-[0.9375rem] text-slate-600 ring-1 ring-sand-200" data-auth>
+  <form method="post" class="mt-6 rounded-xl bg-surface p-4 text-[0.9375rem] text-fg-muted ring-1 ring-line" data-auth>
     <input type="hidden" name="next" value={next} />
     <p>¿No te llegó? Revisá spam o promociones; puede tardar un minuto.</p>
     <p class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-      <button type="submit" name="action" value="resend" formnovalidate data-no-busy class="font-semibold text-brand-700 hover:underline">Reenviar código</button>
-      <a class="font-semibold text-slate-600 hover:text-ink hover:underline" href={`/recuperar${qs({ next: keepNext(next) })}`}>Usar otro correo</a>
+      <button type="submit" name="action" value="resend" formnovalidate data-no-busy class="font-semibold text-accent hover:underline">Reenviar código</button>
+      <a class="font-semibold text-fg-muted hover:text-fg hover:underline" href={`/recuperar${qs({ next: keepNext(next) })}`}>Usar otro correo</a>
     </p>
   </form>
 </AuthLayout>

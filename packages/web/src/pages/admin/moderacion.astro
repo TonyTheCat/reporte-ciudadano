@@ -16,13 +16,13 @@ const REASON: Record<string, string> = { falso: "Falso", ofensivo: "Ofensivo", d
     <AdminNav active="moderacion" />
     <section class="mb-8">
       <h2 class="mb-2 text-lg font-bold">Reportes denunciados ({flags.length})</h2>
-      {flags.length === 0 ? <p class="text-slate-500">Nada pendiente. 🎉</p> : (
+      {flags.length === 0 ? <p class="text-fg-subtle">Nada pendiente. 🎉</p> : (
         <ul class="grid gap-3 sm:grid-cols-2">
           {flags.map((f) => (
             <li class="card space-y-2 p-4">
               <a href={`/admin/r/${f.public_code.toLowerCase()}`} class="font-semibold underline">{f.title}</a>
-              <p class="text-xs text-slate-500">{f.public_code} · {f.visibility}</p>
-              <ul class="text-sm">{f.flags.map((x) => <li>⚑ {REASON[x.reason]} {x.note && `— ${x.note}`} <span class="text-slate-400">({timeAgo(x.created_at)})</span></li>)}</ul>
+              <p class="text-xs text-fg-subtle">{f.public_code} · {f.visibility}</p>
+              <ul class="text-sm">{f.flags.map((x) => <li>⚑ {REASON[x.reason]} {x.note && `— ${x.note}`} <span class="text-fg-subtle">({timeAgo(x.created_at)})</span></li>)}</ul>
               <FlagDecision client:visible id={f.report_id} />
             </li>
           ))}
@@ -31,14 +31,14 @@ const REASON: Record<string, string> = { falso: "Falso", ofensivo: "Ofensivo", d
     </section>
     <section>
       <h2 class="mb-2 text-lg font-bold">Fotos para revisar ({photos.length})</h2>
-      {photos.length === 0 ? <p class="text-slate-500">Nada pendiente.</p> : (
+      {photos.length === 0 ? <p class="text-fg-subtle">Nada pendiente.</p> : (
         <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {photos.map((p) => (
             <li class="card overflow-hidden">
               {p.s3_key_public && <img src={staffPhotoUrl(p)} alt="" class="aspect-square w-full object-cover blur-sm hover:blur-none" />}
               <div class="space-y-1 p-2 text-xs">
                 <a href={`/admin/r/${p.public_code.toLowerCase()}`} class="font-semibold underline">{p.title}</a>
-                <p class="text-amber-700">{((p.moderation as any).labels ?? []).map((l: any) => l.name).join(", ")}</p>
+                <p class="text-warning">{((p.moderation as any).labels ?? []).map((l: any) => l.name).join(", ")}</p>
                 <PhotoDecision client:visible id={p.id} />
               </div>
             </li>

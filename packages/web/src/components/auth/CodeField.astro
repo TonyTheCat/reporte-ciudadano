@@ -22,5 +22,5 @@ const { value, error } = Astro.props;
     aria-describedby={error ? "f-code-error" : undefined}
     autofocus={!value}
   />
-  {error && <p id="f-code-error" class="mt-1.5 text-sm font-medium text-alert-600">{error}</p>}
+  {error && <p id="f-code-error" class="mt-1.5 text-sm font-medium text-alert-fg">{error}</p>}
 </div>

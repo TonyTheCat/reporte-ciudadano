@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import ThemeScript from "../components/ThemeScript.astro";
 
 interface Props {
   title: string;
@@ -16,6 +17,7 @@ const { title, heading, lead } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{`${title} · Reporte Ciudadano`}</title>
+    <ThemeScript />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#0a3229" />
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -92,25 +94,25 @@ const { title, heading, lead } = Astro.props;
       </aside>
 
       <main class="flex flex-col px-5 py-6 sm:px-10 sm:py-10">
-        <a href="/" class="font-display flex items-center gap-2.5 text-lg font-extrabold tracking-tight text-ink lg:hidden">
+        <a href="/" class="font-display flex items-center gap-2.5 text-lg font-extrabold tracking-tight text-fg lg:hidden">
           <img src="/icon.svg" alt="" width="34" height="34" />
-          <span>Reporte<span class="text-brand-600">Ciudadano</span></span>
+          <span>Reporte<span class="text-accent">Ciudadano</span></span>
         </a>
 
         <div class="mx-auto flex w-full max-w-[26rem] flex-1 flex-col justify-center py-10">
-          <h1 class="text-[2rem] leading-tight font-extrabold text-ink">{heading}</h1>
+          <h1 class="text-[2rem] leading-tight font-extrabold text-fg">{heading}</h1>
           {(lead || Astro.slots.has("lead")) && (
-            <p class="mt-2 text-[1.0625rem] leading-relaxed text-slate-600"><slot name="lead">{lead}</slot></p>
+            <p class="mt-2 text-[1.0625rem] leading-relaxed text-fg-muted"><slot name="lead">{lead}</slot></p>
           )}
           <div class="mt-8">
             <slot />
           </div>
         </div>
 
-        <nav class="mx-auto flex w-full max-w-[26rem] flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500" aria-label="Enlaces legales">
-          <a class="inline-flex items-center gap-1 font-semibold text-brand-700 hover:underline" href="/">← Volver al mapa</a>
-          <a class="ml-auto hover:text-ink hover:underline" href="/privacidad">Privacidad</a>
-          <a class="hover:text-ink hover:underline" href="/terminos">Términos</a>
+        <nav class="mx-auto flex w-full max-w-[26rem] flex-wrap items-center gap-x-5 gap-y-2 text-sm text-fg-subtle" aria-label="Enlaces legales">
+          <a class="inline-flex items-center gap-1 font-semibold text-accent hover:underline" href="/">← Volver al mapa</a>
+          <a class="ml-auto hover:text-fg hover:underline" href="/privacidad">Privacidad</a>
+          <a class="hover:text-fg hover:underline" href="/terminos">Términos</a>
         </nav>
       </main>
     </div>
@@ -153,7 +155,7 @@ const { title, heading, lead } = Astro.props;
       @keyframes rc-spin { to { transform: rotate(360deg); } }
       @media (prefers-reduced-motion: reduce) { button[aria-busy="true"]::after { animation-duration: 2s; } }
       [data-ok] .rc-check { background: var(--color-brand-600); color: #fff; border-color: transparent; }
-      [data-ok] { color: var(--color-brand-700); }
+      [data-ok] { color: var(--color-accent); }
     </style>
   </body>
 </html>

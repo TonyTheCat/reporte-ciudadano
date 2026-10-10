@@ -78,27 +78,27 @@ const eventText = (e: (typeof events)[number]) => {
 ---
 <Base title={`${report.title} · ${place}`} description={description} image={mediaUrl(reportPhotos[0]?.s3_key_public ?? null)} noindex={report.visibility !== "published" || report.status === "duplicado"} jsonLd={jsonLd}>
   <article class="mx-auto max-w-3xl px-4 py-4">
-    <nav class="mb-3 text-sm text-slate-500" aria-label="Migas de pan">
+    <nav class="mb-3 text-sm text-fg-subtle" aria-label="Migas de pan">
       <a href="/py" class="hover:underline">Paraguay</a>
       {report.dept_slug && <> › <a href={`/py/${report.dept_slug}`} class="hover:underline">{report.dept_name}</a></>}
       {report.district_slug && <> › <a href={`/py/${report.dept_slug}/${report.district_slug}`} class="hover:underline">{report.district_name}</a></>}
     </nav>
 
     {report.visibility !== "published" && (
-      <p class="mb-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Este reporte está en revisión y no aparece en el mapa público.</p>
+      <p class="mb-3 rounded-xl bg-warning-soft p-3 text-sm text-warning">Este reporte está en revisión y no aparece en el mapa público.</p>
     )}
     {original && (
-      <p class="mb-3 rounded-xl bg-slate-100 p-3 text-sm">Este reporte es un duplicado de <a class="font-semibold text-brand-600 underline" href={reportPath(original)}>{original.title}</a>.</p>
+      <p class="mb-3 rounded-xl bg-fill p-3 text-sm">Este reporte es un duplicado de <a class="font-semibold text-accent underline" href={reportPath(original)}>{original.title}</a>.</p>
     )}
 
     <header class="mb-4">
       <p class="mb-2 flex flex-wrap items-center gap-2 text-sm">
-        <a href={`/categoria/${report.category_slug}`} class="chip" style={`background:${report.category_color}1f;color:${report.category_color}`}>{report.category_icon} {report.category_name}</a>
+        <a href={`/categoria/${report.category_slug}`} class="chip tint" style={`--tint:${report.category_color}`}>{report.category_icon} {report.category_name}</a>
         <StatusBadge status={report.status} />
-        <span class="font-mono text-xs text-slate-400">{report.public_code}</span>
+        <span class="font-mono text-xs text-fg-subtle">{report.public_code}</span>
       </p>
       <h1 class="text-2xl leading-tight font-extrabold sm:text-3xl">{report.title}</h1>
-      <p class="mt-1 text-sm text-slate-500">📍 {place} · Reportado el <time datetime={report.created_at.toISOString()}>{formatDate(report.created_at)}</time> ({timeAgo(report.created_at)})</p>
+      <p class="mt-1 text-sm text-fg-subtle">📍 {place} · Reportado el <time datetime={report.created_at.toISOString()}>{formatDate(report.created_at)} ({timeAgo(report.created_at)})</time></p>
     </header>
 
     <div class="grid gap-6 md:grid-cols-[1fr_18rem]">
@@ -106,7 +106,7 @@ const eventText = (e: (typeof events)[number]) => {
         {reportPhotos.length > 0 && (
           <div class:list={["grid gap-2", reportPhotos.length > 1 ? "grid-cols-2" : ""]}>
             {reportPhotos.map((p, i) => (
-              <a href={mediaUrl(p.s3_key_public)} class:list={["block overflow-hidden rounded-2xl bg-slate-100", i === 0 && reportPhotos.length === 3 ? "col-span-2" : ""]}>
+              <a href={mediaUrl(p.s3_key_public)} class:list={["block overflow-hidden rounded-2xl bg-fill", i === 0 && reportPhotos.length === 3 ? "col-span-2" : ""]}>
                 <img src={mediaUrl(p.s3_key_public)} alt={`Foto ${i + 1} de: ${report.title}`} width={p.width ?? undefined} height={p.height ?? undefined} class="h-full max-h-[28rem] w-full object-cover" loading={i === 0 ? "eager" : "lazy"} />
               </a>
             ))}
@@ -116,13 +116,13 @@ const eventText = (e: (typeof events)[number]) => {
         {report.description && <p class="text-lg leading-relaxed whitespace-pre-line">{report.description}</p>}
         {extraEntries.length > 0 && (
           <dl class="card grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 p-4 text-sm">
-            {extraEntries.map(([k, v]) => (<><dt class="font-semibold capitalize text-slate-500">{k}</dt><dd>{v}</dd></>))}
+            {extraEntries.map(([k, v]) => (<><dt class="font-semibold capitalize text-fg-subtle">{k}</dt><dd>{v}</dd></>))}
           </dl>
         )}
 
         {resolutionPhotos.length > 0 && (
           <section>
-            <h2 class="mb-2 font-bold text-green-700">Después de la resolución</h2>
+            <h2 class="mb-2 font-bold text-success">Después de la resolución</h2>
             <div class="grid grid-cols-2 gap-2">
               {resolutionPhotos.map((p) => <img src={mediaUrl(p.s3_key_public)} alt="Foto de la resolución" class="rounded-2xl" loading="lazy" />)}
             </div>
@@ -131,13 +131,13 @@ const eventText = (e: (typeof events)[number]) => {
 
         <section>
           <h2 class="mb-3 text-lg font-bold">Seguimiento del caso</h2>
-          <ol class="relative ml-2 border-l-2 border-slate-200">
+          <ol class="relative ml-2 border-l-2 border-line">
             {events.map((e) => (
               <li class="mb-4 ml-5">
-                <span class="absolute -left-[9px] mt-1 h-4 w-4 rounded-full border-2 border-white" style={`background:${e.to_status ? "var(--color-brand-600)" : "#94a3b8"}`}></span>
-                <p class="font-semibold">{eventText(e)} {e.actor_role !== "ciudadano" && e.actor_role !== "sistema" && <span class="chip ml-1 bg-brand-50 text-brand-700">{e.actor_role}</span>}</p>
-                {e.note && e.type !== "visibility" && e.type !== "photo" && <p class="text-slate-700">{e.note}</p>}
-                <p class="text-xs text-slate-500"><time datetime={e.created_at.toISOString()}>{formatDateTime(e.created_at)}</time></p>
+                <span class="absolute -left-[9px] mt-1 h-4 w-4 rounded-full border-2 border-surface" style={`background:${e.to_status ? "var(--color-brand-600)" : "var(--color-fg-subtle)"}`}></span>
+                <p class="font-semibold">{eventText(e)} {e.actor_role !== "ciudadano" && e.actor_role !== "sistema" && <span class="chip ml-1 bg-accent-soft text-accent">{e.actor_role}</span>}</p>
+                {e.note && e.type !== "visibility" && e.type !== "photo" && <p class="text-fg-muted">{e.note}</p>}
+                <p class="text-xs text-fg-subtle"><time datetime={e.created_at.toISOString()}>{formatDateTime(e.created_at)}</time></p>
               </li>
             ))}
           </ol>

@@ -15,7 +15,7 @@ export default function MiniMap({ lat, lng, color }: { lat: number; lng: number;
     return () => map.remove();
   }, []);
   return (
-    <a href={`/?lat=${lat}&lng=${lng}&z=16`} className="block h-48 overflow-hidden rounded-2xl ring-1 ring-slate-200" aria-label="Ver en el mapa general">
+    <a href={`/?lat=${lat}&lng=${lng}&z=16`} className="block h-48 overflow-hidden rounded-2xl ring-1 ring-line" aria-label="Ver en el mapa general">
       <div ref={el} className="h-full w-full" />
     </a>
   );

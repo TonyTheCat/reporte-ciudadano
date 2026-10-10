@@ -135,10 +135,10 @@ export default function MapView({ categories, initial, home }: {
             </FilterChip>
           ))}
         </div>
-        <div className="pointer-events-auto inline-flex rounded-xl bg-white p-1 shadow ring-1 ring-slate-200">
+        <div className="pointer-events-auto inline-flex rounded-xl bg-surface p-1 shadow ring-1 ring-line">
           {STATUS_FILTERS.map((s) => (
             <button key={s.value} onClick={() => setStatus(s.value)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${status === s.value ? "bg-brand-600 text-white" : "text-slate-600"}`}>
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${status === s.value ? "bg-brand-600 text-white" : "text-fg-muted"}`}>
               {s.label}
             </button>
           ))}
@@ -147,32 +147,32 @@ export default function MapView({ categories, initial, home }: {
 
       {/* Panel inferior con los reportes del área visible */}
       <section
-        className={`absolute inset-x-0 bottom-0 z-20 mx-auto max-w-xl rounded-t-3xl bg-white shadow-[0_-8px_30px_rgba(0,0,0,.12)] transition-[height] duration-300 md:bottom-4 md:right-4 md:left-auto md:mx-0 md:w-96 md:rounded-3xl ${sheet === "open" ? "h-[65%]" : "h-[7rem] md:h-[70%]"}`}
+        className={`absolute inset-x-0 bottom-0 z-20 mx-auto max-w-xl rounded-t-3xl bg-raised shadow-[0_-8px_30px_rgba(0,0,0,.12)] transition-[height] duration-300 md:bottom-4 md:right-4 md:left-auto md:mx-0 md:w-96 md:rounded-3xl ${sheet === "open" ? "h-[65%]" : "h-[7rem] md:h-[70%]"}`}
         aria-label="Reportes en esta zona"
       >
         <button className="flex w-full flex-col items-center pt-2 pb-1 md:hidden" onClick={() => setSheet(sheet === "open" ? "peek" : "open")} aria-expanded={sheet === "open"}>
-          <span className="h-1.5 w-10 rounded-full bg-slate-300" />
+          <span className="h-1.5 w-10 rounded-full bg-fill-strong" />
         </button>
         <div className="flex items-baseline justify-between px-4 pb-2 md:pt-4">
           <h2 className="font-bold">{loading ? "Buscando…" : `${items.length}${items.length === 40 ? "+" : ""} reportes en esta zona`}</h2>
-          <a href="/reportar" className="text-sm font-semibold text-alert-600">+ Reportar</a>
+          <a href="/reportar" className="text-sm font-semibold text-alert-fg">+ Reportar</a>
         </div>
         <ul className="h-[calc(100%-4.5rem)] overflow-y-auto px-2 pb-4">
           {items.length === 0 && !loading && (
-            <li className="px-3 py-6 text-center text-sm text-slate-500">No hay reportes acá todavía. ¿Viste algún problema? <a className="font-semibold text-brand-600" href="/reportar">Reportalo</a>.</li>
+            <li className="px-3 py-6 text-center text-sm text-fg-subtle">No hay reportes acá todavía. ¿Viste algún problema? <a className="font-semibold text-accent" href="/reportar">Reportalo</a>.</li>
           )}
           {items.map((it) => (
             <li key={it.code}>
-              <div className="flex gap-3 rounded-xl p-2 hover:bg-slate-50">
-                <button onClick={() => flyTo(it)} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl" style={{ background: it.color + "22" }} aria-label={`Ver ${it.title} en el mapa`}>
+              <div className="flex gap-3 rounded-xl p-2 hover:bg-surface-2">
+                <button onClick={() => flyTo(it)} className="tint-bg relative h-16 w-16 shrink-0 overflow-hidden rounded-xl" style={{ "--tint": it.color } as React.CSSProperties} aria-label={`Ver ${it.title} en el mapa`}>
                   {it.cover ? <img src={it.cover} alt="" className="h-full w-full object-cover" loading="lazy" /> : <span className="flex h-full items-center justify-center text-2xl">{it.icon}</span>}
                 </button>
                 <a href={it.path} className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{it.title}</p>
-                  <p className="truncate text-xs text-slate-500">{it.place || "Paraguay"} · {timeAgo(it.created_at)}</p>
+                  <p className="truncate text-xs text-fg-subtle">{it.place || "Paraguay"} · <time dateTime={it.created_at}>{timeAgo(it.created_at)}</time></p>
                   <p className="mt-1 flex items-center gap-2 text-xs">
-                    <span className="chip" style={{ background: STATUS_COLORS[it.status] + "1f", color: STATUS_COLORS[it.status] }}>{STATUS_LABEL[it.status]}</span>
-                    {it.confirmations > 0 && <span className="text-slate-500">👥 {it.confirmations}</span>}
+                    <span className="chip tint" style={{ "--tint": STATUS_COLORS[it.status] } as React.CSSProperties}>{STATUS_LABEL[it.status]}</span>
+                    {it.confirmations > 0 && <span className="text-fg-subtle">👥 {it.confirmations}</span>}
                   </p>
                 </a>
               </div>
@@ -184,14 +184,29 @@ export default function MapView({ categories, initial, home }: {
   );
 }
 
-function FilterChip({ active, onClick, children, color }: { active: boolean; onClick: () => void; children: React.ReactNode; color?: string }) {
+function FilterChip({ active, onClick, children, color = "#0f6b55" }: { active: boolean; onClick: () => void; children: React.ReactNode; color?: string }) {
   return (
     <button onClick={onClick} aria-pressed={active}
-      className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold shadow ring-1 ${active ? "text-white ring-transparent" : "bg-white text-slate-700 ring-slate-200"}`}
-      style={active ? { background: color ?? "#0f6b55" } : undefined}>
+      className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold shadow ring-1 ${active ? `${textOn(color)} ring-transparent` : "bg-surface text-fg-muted ring-line"}`}
+      style={active ? { background: color } : undefined}>
       {children}
     </button>
   );
+}
+
+/**
+ * Texto legible sobre el color de una categoría (lo elige un admin): blanco u oscuro, el que más contraste.
+ * Con blanco fijo, categorías claras como Alumbrado (#f59f00) quedaban en 2:1.
+ */
+function textOn(hex: string): string {
+  const lum = 0.2126 * channel(hex, 1) + 0.7152 * channel(hex, 3) + 0.0722 * channel(hex, 5);
+  const INK_LUM = 0.0115; // luminancia relativa de --color-ink (#0e1f1b)
+  return 1.05 / (lum + 0.05) >= (lum + 0.05) / (INK_LUM + 0.05) ? "text-white" : "text-ink";
+}
+
+function channel(hex: string, i: number): number {
+  const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+  return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
 }
 
 function popupContent(p: { code: string; slug: string; title: string; status: Status; icon: string; confirmations: number; created: number }) {
@@ -200,13 +215,13 @@ function popupContent(p: { code: string; slug: string; title: string; status: St
   a.href = `/r/${String(p.code).toLowerCase()}-${p.slug}`;
   a.className = "block p-3";
   const title = document.createElement("p");
-  title.className = "font-semibold text-slate-900";
+  title.className = "font-semibold text-fg";
   title.textContent = `${p.icon} ${p.title}`;
   const meta = document.createElement("p");
-  meta.className = "mt-1 text-xs text-slate-500";
+  meta.className = "mt-1 text-xs text-fg-subtle";
   meta.textContent = `${STATUS_LABEL[p.status]} · ${timeAgo(new Date(p.created * 1000))}${p.confirmations ? ` · 👥 ${p.confirmations}` : ""}`;
   const more = document.createElement("p");
-  more.className = "mt-2 text-sm font-semibold text-brand-600";
+  more.className = "mt-2 text-sm font-semibold text-accent";
   more.textContent = "Ver caso →";
   a.append(title, meta, more);
   div.append(a);

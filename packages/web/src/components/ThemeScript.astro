@@ -1,0 +1,13 @@
+---
+/**
+ * Aplica el tema elegido a mano antes del primer pintado (sin destello). Sin elección guardada no hace nada:
+ * el CSS sigue al sistema. Va inline y bloqueante porque el HTML se cachea en CloudFront y no puede traer el
+ * tema de cada persona. La clave la comparte ThemeToggle.
+ */
+---
+<script is:inline>
+  try {
+    var t = localStorage.getItem("rc-theme");
+    if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+  } catch (e) {}
+</script>

@@ -14,6 +14,6 @@ const describedBy = [error && `${id}-error`, hint && `${id}-hint`].filter(Boolea
 <div>
   <label class="label" for={id}>{label}</label>
   <input class="input" id={id} name={name} aria-invalid={error ? "true" : undefined} aria-describedby={describedBy} {...rest} />
-  {hint && <p id={`${id}-hint`} class="mt-1.5 text-sm text-slate-500">{hint}</p>}
-  {error && <p id={`${id}-error`} class="mt-1.5 text-sm font-medium text-alert-600">{error}</p>}
+  {hint && <p id={`${id}-hint`} class="mt-1.5 text-sm text-fg-subtle">{hint}</p>}
+  {error && <p id={`${id}-error`} class="mt-1.5 text-sm font-medium text-alert-fg">{error}</p>}
 </div>

@@ -4,14 +4,14 @@ interface Props {
 }
 const { tone = "info" } = Astro.props;
 const styles = {
-  error: "bg-alert-50 text-alert-700 ring-alert-200",
-  success: "bg-brand-50 text-brand-800 ring-brand-200",
-  info: "bg-sand-50 text-ink ring-sand-300",
+  error: "bg-alert-soft text-alert-fg ring-alert-fg/25",
+  success: "bg-accent-soft text-accent ring-accent/25",
+  info: "bg-surface text-fg ring-line-strong",
 }[tone];
 const icon = { error: "!", success: "✓", info: "i" }[tone];
-const dot = { error: "bg-alert-500", success: "bg-brand-600", info: "bg-ink" }[tone];
+const dot = { error: "bg-alert-500 text-white", success: "bg-brand-600 text-white", info: "bg-fg text-canvas" }[tone];
 ---
 <div class:list={["mb-6 flex gap-3 rounded-xl px-4 py-3 text-[0.9375rem] ring-1", styles]} role={tone === "error" ? "alert" : "status"}>
-  <span class:list={["mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white", dot]} aria-hidden="true">{icon}</span>
+  <span class:list={["mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold", dot]} aria-hidden="true">{icon}</span>
   <div class="min-w-0"><slot /></div>
 </div>

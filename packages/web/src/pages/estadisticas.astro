@@ -13,7 +13,7 @@ const ranked = byDept.filter((d) => d.total > 0);
   <div class="mx-auto max-w-6xl space-y-8 px-4 py-6">
     <header>
       <h1 class="text-3xl font-extrabold">Estadísticas</h1>
-      <p class="text-slate-600">Todo lo que la ciudadanía reportó, en números. Los datos son abiertos: <a class="font-semibold text-brand-600 underline" href="/datos-abiertos">descargalos</a>.</p>
+      <p class="text-fg-muted">Todo lo que la ciudadanía reportó, en números. Los datos son abiertos: <a class="font-semibold text-accent underline" href="/datos-abiertos">descargalos</a>.</p>
     </header>
 
     <StatsBlock summary={s} timeseries={ts} categoryHref={(slug) => `/categoria/${slug}`} />
@@ -25,18 +25,18 @@ const ranked = byDept.filter((d) => d.total > 0);
       </div>
       <div>
         <h2 class="mb-2 text-xl font-bold">Ranking</h2>
-        <ol class="card divide-y divide-slate-100 text-sm">
+        <ol class="card divide-y divide-line text-sm">
           {ranked.slice(0, 18).map((d, i) => (
-            <li><a href={`/py/${d.slug}`} class="flex justify-between p-3 hover:bg-slate-50"><span><b class="mr-2 text-slate-400">{i + 1}</b>{d.name}</span><span>{d.total} <span class="text-slate-400">· {d.total ? Math.round((d.resolved / d.total) * 100) : 0}% resuelto</span></span></a></li>
+            <li><a href={`/py/${d.slug}`} class="flex justify-between p-3 hover:bg-surface-2"><span><b class="mr-2 text-fg-subtle">{i + 1}</b>{d.name}</span><span>{d.total} <span class="text-fg-subtle">· {d.total ? Math.round((d.resolved / d.total) * 100) : 0}% resuelto</span></span></a></li>
           ))}
-          {ranked.length === 0 && <li class="p-3 text-slate-500">Sin datos todavía.</li>}
+          {ranked.length === 0 && <li class="p-3 text-fg-subtle">Sin datos todavía.</li>}
         </ol>
       </div>
     </section>
 
     <section>
       <h2 class="mb-1 text-xl font-bold">Consultá cualquier zona</h2>
-      <p class="mb-3 text-slate-600">Dibujá un área (tu barrio, una avenida, un radio alrededor de una escuela) y obtené sus estadísticas y focos.</p>
+      <p class="mb-3 text-fg-muted">Dibujá un área (tu barrio, una avenida, un radio alrededor de una escuela) y obtené sus estadísticas y focos.</p>
       <GisQuery client:visible categories={categories.map(({ slug, name }) => ({ slug, name }))} />
     </section>
   </div>

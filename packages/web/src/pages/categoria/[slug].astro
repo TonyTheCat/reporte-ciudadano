@@ -24,8 +24,8 @@ const where = dept ? ` en ${dept.name}` : " en Paraguay";
       <div>
         <p class="text-4xl" aria-hidden="true">{category.icon}</p>
         <h1 class="text-3xl font-extrabold">{category.name}{where}</h1>
-        {category.description && <p class="text-slate-600">{category.description}</p>}
-        {!category.accepting && <p class="mt-2 chip bg-slate-100 text-slate-600">Esta categoría no recibe reportes nuevos en este momento.</p>}
+        {category.description && <p class="text-fg-muted">{category.description}</p>}
+        {!category.accepting && <p class="mt-2 chip bg-fill text-fg-muted">Esta categoría no recibe reportes nuevos en este momento.</p>}
       </div>
       {category.accepting && <a href={`/reportar?categoria=${category.slug}`} class="btn-alert py-2 text-sm">+ Reportar {category.name.toLowerCase()}</a>}
     </header>
@@ -35,7 +35,7 @@ const where = dept ? ` en ${dept.name}` : " en Paraguay";
         <h2 class="mb-2 text-xl font-bold">Por departamento</h2>
         <StatsMap client:visible level={1} category={category.slug} />
         <ul class="mt-3 flex flex-wrap gap-2 text-sm">
-          {byDept.filter((d) => d.total > 0).map((d) => <li><a class="chip bg-white px-3 py-1.5 ring-1 ring-slate-200" href={`?dept=${d.slug}`}>{d.name} · {d.total}</a></li>)}
+          {byDept.filter((d) => d.total > 0).map((d) => <li><a class="chip bg-surface px-3 py-1.5 ring-1 ring-line" href={`?dept=${d.slug}`}>{d.name} · {d.total}</a></li>)}
         </ul>
       </section>
     )}

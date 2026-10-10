@@ -19,21 +19,21 @@ const [photos, events] = await Promise.all([listPhotos(report.id, true), listEve
     <AdminNav active="bandeja" />
     <div class="grid gap-6 md:grid-cols-[1fr_22rem]">
       <div class="space-y-4">
-        <p class="flex flex-wrap items-center gap-2 text-sm"><span class="font-mono">{report.public_code}</span><StatusBadge status={report.status} /><span class="chip bg-slate-100">{report.visibility}</span>{report.flags_count > 0 && <span class="chip bg-red-100 text-red-700">⚑ {report.flags_count} denuncias</span>}</p>
+        <p class="flex flex-wrap items-center gap-2 text-sm"><span class="font-mono">{report.public_code}</span><StatusBadge status={report.status} /><span class="chip bg-fill">{report.visibility}</span>{report.flags_count > 0 && <span class="chip bg-danger-soft text-danger">⚑ {report.flags_count} denuncias</span>}</p>
         <h1 class="text-2xl font-extrabold">{report.category_icon} {report.title}</h1>
-        <p class="text-sm text-slate-500">{[report.district_name, report.dept_name].filter(Boolean).join(", ")} · {report.lat.toFixed(5)}, {report.lng.toFixed(5)} · 👥 {report.confirmations_count}</p>
+        <p class="text-sm text-fg-subtle">{[report.district_name, report.dept_name].filter(Boolean).join(", ")} · {report.lat.toFixed(5)}, {report.lng.toFixed(5)} · 👥 {report.confirmations_count}</p>
         <p class="flex gap-3 text-sm">
-          <a class="text-brand-600 underline" href={reportPath(report)}>Ver página pública</a>
-          <a class="text-brand-600 underline" target="_blank" rel="noopener" href={`https://www.google.com/maps?q=${report.lat},${report.lng}`}>Google Maps</a>
+          <a class="text-accent underline" href={reportPath(report)}>Ver página pública</a>
+          <a class="text-accent underline" target="_blank" rel="noopener" href={`https://www.google.com/maps?q=${report.lat},${report.lng}`}>Google Maps</a>
         </p>
         {report.description && <p class="whitespace-pre-line">{report.description}</p>}
         <div class="grid grid-cols-2 gap-3">
           {photos.map((p) => (
             <figure class="card overflow-hidden">
-              {p.s3_key_public ? <img src={staffPhotoUrl(p)} alt="" class="aspect-square w-full object-cover" /> : <div class="flex aspect-square items-center justify-center bg-slate-100 text-sm text-slate-500">{p.status === "processing" ? "Procesando…" : "Sin versión pública"}</div>}
+              {p.s3_key_public ? <img src={staffPhotoUrl(p)} alt="" class="aspect-square w-full object-cover" /> : <div class="flex aspect-square items-center justify-center bg-fill text-sm text-fg-subtle">{p.status === "processing" ? "Procesando…" : "Sin versión pública"}</div>}
               <figcaption class="space-y-1 p-2 text-xs">
                 <p><b>{p.kind === "resolution" ? "Resolución" : "Reporte"}</b> · {p.status} · caras: {(p.moderation as any).faces ?? "—"}</p>
-                {(p.moderation as any).labels?.length > 0 && <p class="text-amber-700">{(p.moderation as any).labels.map((l: any) => `${l.name} ${l.confidence}%`).join(", ")}</p>}
+                {(p.moderation as any).labels?.length > 0 && <p class="text-warning">{(p.moderation as any).labels.map((l: any) => `${l.name} ${l.confidence}%`).join(", ")}</p>}
                 {p.status === "review" && <PhotoDecision client:load id={p.id} />}
               </figcaption>
             </figure>
@@ -41,11 +41,11 @@ const [photos, events] = await Promise.all([listPhotos(report.id, true), listEve
         </div>
         <section>
           <h2 class="mb-2 font-bold">Historial completo</h2>
-          <ol class="card divide-y divide-slate-100 text-sm">
+          <ol class="card divide-y divide-line text-sm">
             {events.map((e) => (
               <li class="p-3">
-                <p><b>{e.type === "status_change" ? `${STATUS_LABEL[e.from_status!] ?? "—"} → ${STATUS_LABEL[e.to_status!]}` : e.type}</b> <span class="text-slate-500">· {e.actor_role} · {formatDateTime(e.created_at)}</span> {!e.public && <span class="chip bg-slate-100">interno</span>}</p>
-                {e.note && <p class="text-slate-700">{e.note}</p>}
+                <p><b>{e.type === "status_change" ? `${STATUS_LABEL[e.from_status!] ?? "—"} → ${STATUS_LABEL[e.to_status!]}` : e.type}</b> <span class="text-fg-subtle">· {e.actor_role} · {formatDateTime(e.created_at)}</span> {!e.public && <span class="chip bg-fill">interno</span>}</p>
+                {e.note && <p class="text-fg-muted">{e.note}</p>}
               </li>
             ))}
           </ol>

@@ -81,14 +81,14 @@ export default function ReportActions(props: {
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2">
         {props.open && (
-          <button onClick={confirm} disabled={confirmed} className={`btn col-span-2 ${confirmed ? "bg-green-100 text-green-800" : "bg-brand-600 text-white"}`}>
+          <button onClick={confirm} disabled={confirmed} className={`btn col-span-2 ${confirmed ? "bg-success-soft text-success" : "bg-brand-600 text-white"}`}>
             {confirmed ? "✓ Confirmaste que sigue así" : "👥 A mí también me afecta"}
             <span className="rounded-full bg-white/20 px-2 text-sm">{count}</span>
           </button>
         )}
         <button onClick={toggleFollow} className="btn-ghost">{following ? "🔔 Siguiendo" : "🔔 Seguir caso"}</button>
         <button onClick={share} className="btn-ghost">↗ Compartir</button>
-        <a className="btn-ghost col-span-2 bg-[#25D366]/10 text-[#128C7E]" target="_blank" rel="noopener"
+        <a className="btn-ghost tint col-span-2" style={{ "--tint": "#25D366" } as React.CSSProperties} target="_blank" rel="noopener"
           href={`https://wa.me/?text=${encodeURIComponent(`${props.title} (${props.code}) — ${props.url}`)}`}>
           Compartir por WhatsApp
         </a>
@@ -99,17 +99,17 @@ export default function ReportActions(props: {
           <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => addPhotos(e.target.files)} disabled={!!uploading} />
         </label>
       )}
-      {msg && <p className="text-center text-sm text-slate-600" role="status">{msg}</p>}
+      {msg && <p className="text-center text-sm text-fg-muted" role="status">{msg}</p>}
       <div className="text-center">
         {flagged ? (
-          <p className="text-xs text-slate-500">Gracias, lo vamos a revisar.</p>
+          <p className="text-xs text-fg-subtle">Gracias, lo vamos a revisar.</p>
         ) : (
-          <button onClick={() => setFlagOpen(!flagOpen)} className="text-xs text-slate-500 underline">Denunciar este reporte</button>
+          <button onClick={() => setFlagOpen(!flagOpen)} className="text-xs text-fg-subtle underline">Denunciar este reporte</button>
         )}
         {flagOpen && (
-          <div className="card mt-2 p-2 text-left">
+          <div className="popover mt-2 p-2 text-left">
             {REASONS.map(([k, label]) => (
-              <button key={k} onClick={() => flag(k)} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-50">{label}</button>
+              <button key={k} onClick={() => flag(k)} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-2">{label}</button>
             ))}
           </div>
         )}

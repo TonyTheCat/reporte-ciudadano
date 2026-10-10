@@ -50,14 +50,14 @@ export default function StatsMap({ level, dept, deptSlug, category, bbox, hotspo
       });
       for (const h of hotspots) {
         const node = document.createElement("div");
-        node.className = "flex h-8 min-w-8 items-center justify-center rounded-full bg-red-600 px-2 text-xs font-bold text-white ring-4 ring-red-600/30";
+        node.className = "flex h-8 min-w-8 items-center justify-center rounded-full bg-danger-solid px-2 text-xs font-bold text-white ring-4 ring-danger-solid/30";
         node.textContent = `${h.top_icon} ${h.n}`;
         new maplibregl.Marker({ element: node }).setLngLat([h.lng, h.lat]).addTo(map);
       }
     });
     return () => map.remove();
   }, []);
-  return <div ref={el} className="w-full overflow-hidden rounded-2xl ring-1 ring-slate-200" style={{ height }} role="region" aria-label="Mapa de reportes por zona" />;
+  return <div ref={el} className="w-full overflow-hidden rounded-2xl ring-1 ring-line" style={{ height }} role="region" aria-label="Mapa de reportes por zona" />;
 }
 
 function escapeHtml(s: string) {

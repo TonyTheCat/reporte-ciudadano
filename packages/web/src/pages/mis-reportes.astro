@@ -26,7 +26,7 @@ const mine = user ? await listReports({ userId: user.id, visibility: "any", limi
       </section>
     ) : (
       <div class="card flex flex-wrap items-center justify-between gap-3 p-4">
-        <p class="text-slate-700">Iniciá sesión para ver tus reportes en cualquier dispositivo y recibir avisos cuando cambien de estado.</p>
+        <p class="text-fg-muted">Iniciá sesión para ver tus reportes en cualquier dispositivo y recibir avisos cuando cambien de estado.</p>
         <a href="/ingresar?next=/mis-reportes" class="btn-primary py-2">Ingresar</a>
       </div>
     )}

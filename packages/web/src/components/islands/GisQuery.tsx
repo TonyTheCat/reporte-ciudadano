@@ -74,7 +74,7 @@ export default function GisQuery({ categories }: { categories: { slug: string; n
       markers.current.forEach((m) => m.remove());
       markers.current = data.hotspots.map((h) => {
         const node = document.createElement("div");
-        node.className = "flex h-8 min-w-8 items-center justify-center rounded-full bg-red-600 px-2 text-xs font-bold text-white ring-4 ring-red-600/30";
+        node.className = "flex h-8 min-w-8 items-center justify-center rounded-full bg-danger-solid px-2 text-xs font-bold text-white ring-4 ring-danger-solid/30";
         node.textContent = `${h.top_icon} ${h.n}`;
         return new maplibregl.Marker({ element: node }).setLngLat([h.lng, h.lat]).addTo(mapRef.current!);
       });
@@ -103,14 +103,14 @@ export default function GisQuery({ categories }: { categories: { slug: string; n
       <div className="space-y-2">
         <div className="flex flex-wrap gap-2">
           {(["rectangle", "polygon", "select"] as const).map((m) => (
-            <button key={m} onClick={() => setMode(m)} className={`chip px-3 py-1.5 text-sm ${mode === m ? "bg-brand-600 text-white" : "bg-white ring-1 ring-slate-200"}`}>
+            <button key={m} onClick={() => setMode(m)} className={`chip px-3 py-1.5 text-sm ${mode === m ? "bg-brand-600 text-white" : "bg-surface ring-1 ring-line"}`}>
               {{ rectangle: "▭ Rectángulo", polygon: "⬠ Polígono", select: "✥ Editar" }[m]}
             </button>
           ))}
-          <button onClick={clear} className="chip bg-white px-3 py-1.5 text-sm ring-1 ring-slate-200">Limpiar</button>
+          <button onClick={clear} className="chip bg-surface px-3 py-1.5 text-sm ring-1 ring-line">Limpiar</button>
         </div>
-        <div ref={el} className="h-[60dvh] overflow-hidden rounded-2xl ring-1 ring-slate-200" />
-        <p className="text-xs text-slate-500">Dibujá un área sobre el mapa (en polígono, doble toque para cerrar) y tocá “Consultar”.</p>
+        <div ref={el} className="h-[60dvh] overflow-hidden rounded-2xl ring-1 ring-line" />
+        <p className="text-xs text-fg-subtle">Dibujá un área sobre el mapa (en polígono, doble toque para cerrar) y tocá “Consultar”.</p>
       </div>
       <aside className="space-y-3">
         <div className="card space-y-2 p-4">
@@ -133,14 +133,14 @@ export default function GisQuery({ categories }: { categories: { slug: string; n
               <Stat label="Resueltos" value={pct(result.summary.resolution_rate)} />
             </div>
             {result.summary.median_days_to_resolve !== null && (
-              <p className="text-sm text-slate-600">Tiempo mediano de resolución: <b>{result.summary.median_days_to_resolve} días</b></p>
+              <p className="text-sm text-fg-muted">Tiempo mediano de resolución: <b>{result.summary.median_days_to_resolve} días</b></p>
             )}
             <ul className="space-y-1 text-sm">
               {result.summary.by_category.map((c) => (
                 <li key={c.slug} className="flex justify-between"><span>{c.icon} {c.name}</span><b>{c.n}</b></li>
               ))}
             </ul>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-fg-subtle">
               {result.summary.by_status.map((s) => `${STATUS_LABEL[s.status]}: ${s.n}`).join(" · ")}
             </p>
             <p className="text-sm"><b>{result.hotspots.length}</b> focos detectados (marcados en rojo).</p>
@@ -157,9 +157,9 @@ export default function GisQuery({ categories }: { categories: { slug: string; n
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-slate-50 p-2">
+    <div className="rounded-xl bg-surface-2 p-2">
       <p className="text-lg font-extrabold">{value}</p>
-      <p className="text-[11px] text-slate-500">{label}</p>
+      <p className="text-[11px] text-fg-subtle">{label}</p>
     </div>
   );
 }

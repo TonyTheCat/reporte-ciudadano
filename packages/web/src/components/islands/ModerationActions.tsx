@@ -26,7 +26,7 @@ export function FlagDecision({ id }: { id: string }) {
   return (
     <div className="grid grid-cols-2 gap-2">
       <button className="btn-primary py-2 text-sm" onClick={() => go("published", "Publicado")}>Mantener</button>
-      <button className="btn-ghost py-2 text-sm text-alert-600" onClick={() => go("hidden", "Ocultado")}>Ocultar</button>
+      <button className="btn-ghost py-2 text-sm text-alert-fg" onClick={() => go("hidden", "Ocultado")}>Ocultar</button>
     </div>
   );
 }

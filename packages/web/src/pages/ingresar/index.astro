@@ -65,14 +65,14 @@ try {
     <button type="submit" class="btn-primary w-full text-[1.0625rem]">Ingresar</button>
   </form>
 
-  <p class="mt-8 text-center text-[0.9375rem] text-slate-600">
+  <p class="mt-8 text-center text-[0.9375rem] text-fg-muted">
     ¿Todavía no tenés cuenta?
-    <a class="font-semibold text-brand-700 hover:underline" href={`/registro${qs({ next: keepNext(next) })}`}>Creá una gratis</a>
+    <a class="font-semibold text-accent hover:underline" href={`/registro${qs({ next: keepNext(next) })}`}>Creá una gratis</a>
   </p>
 
   {config.devLogin && (
-    <div class="mt-8 rounded-xl border border-dashed border-sand-300 p-4 text-sm text-slate-600">
-      <p class="font-semibold text-ink">Modo desarrollo</p>
+    <div class="mt-8 rounded-xl border border-dashed border-line-strong p-4 text-sm text-fg-muted">
+      <p class="font-semibold text-fg">Modo desarrollo</p>
       <p class="mt-1">Sin Cognito local. Entrá como usuario de prueba:</p>
       <div class="mt-3 flex gap-2">
         <a class="btn-ghost py-2 text-sm" href={`/auth/dev?as=admin&next=${encodeURIComponent(next)}`}>Admin</a>

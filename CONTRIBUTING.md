@@ -79,6 +79,7 @@ Usá el cuerpo para explicar **por qué**, no qué (eso ya lo dice el diff).
 - **Sin costo fijo nuevo**: si tu cambio agrega un recurso de AWS que se cobra por hora, discutilo antes en un issue.
 - **Privacidad**: no expongas `reporter_user_id`, `ip_hash`, correos ni originales de fotos en respuestas públicas ni en exportaciones.
 - **Accesibilidad**: etiquetas en formularios, contraste suficiente, navegable con teclado.
+- **Colores**: usá los tokens de `packages/web/src/styles/global.css` (`bg-surface`, `text-fg-muted`, `ring-line`, `text-danger`…), no la paleta de Tailwind (`slate`, `gray`, `red`…) ni colores sueltos: los tokens ya tienen su valor para el modo oscuro. Para un color que viene de la base (estado o categoría), usá `tint` con `style="--tint: #hex"`.
 
 ## Dependencias
 

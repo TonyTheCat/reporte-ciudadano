@@ -7,26 +7,26 @@ interface Props { reports: ReportRow[]; empty?: string; admin?: boolean }
 const { reports, empty = "Todavía no hay reportes.", admin = false } = Astro.props;
 ---
 {reports.length === 0 ? (
-  <p class="card p-6 text-center text-slate-500">{empty}</p>
+  <p class="card p-6 text-center text-fg-subtle">{empty}</p>
 ) : (
-  <ul class="card divide-y divide-slate-100">
+  <ul class="card divide-y divide-line">
     {reports.map((r) => (
       <li>
-        <a href={admin ? `/admin/r/${r.public_code.toLowerCase()}` : reportPath(r)} class="flex gap-3 p-3 hover:bg-slate-50">
-          <div class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl text-2xl" style={`background:${r.category_color}1f`}>
+        <a href={admin ? `/admin/r/${r.public_code.toLowerCase()}` : reportPath(r)} class="flex gap-3 p-3 hover:bg-surface-2">
+          <div class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl text-2xl tint-bg" style={`--tint:${r.category_color}`}>
             {r.cover_url ? <img src={r.cover_url} alt="" class="h-full w-full object-cover" loading="lazy" width="64" height="64" /> : <span aria-hidden="true">{r.category_icon}</span>}
           </div>
           <div class="min-w-0 flex-1">
             <p class="truncate font-semibold">{r.title}</p>
-            <p class="truncate text-xs text-slate-500">
+            <p class="truncate text-xs text-fg-subtle">
               {r.category_name} · {[r.district_name, r.dept_name].filter(Boolean).join(", ") || "Paraguay"} · <time datetime={r.created_at.toISOString()}>{timeAgo(r.created_at)}</time>
             </p>
             <p class="mt-1 flex flex-wrap items-center gap-2 text-xs">
               <StatusBadge status={r.status} />
-              {r.confirmations_count > 0 && <span class="text-slate-500">👥 {r.confirmations_count}</span>}
-              {admin && r.visibility !== "published" && <span class="chip bg-amber-100 text-amber-800">{r.visibility}</span>}
-              {admin && r.flags_count > 0 && <span class="chip bg-red-100 text-red-700">⚑ {r.flags_count}</span>}
-              <span class="font-mono text-slate-400">{r.public_code}</span>
+              {r.confirmations_count > 0 && <span class="text-fg-subtle">👥 {r.confirmations_count}</span>}
+              {admin && r.visibility !== "published" && <span class="chip bg-warning-soft text-warning">{r.visibility}</span>}
+              {admin && r.flags_count > 0 && <span class="chip bg-danger-soft text-danger">⚑ {r.flags_count}</span>}
+              <span class="font-mono text-fg-subtle">{r.public_code}</span>
             </p>
           </div>
         </a>
