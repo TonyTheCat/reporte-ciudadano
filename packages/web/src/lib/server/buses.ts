@@ -16,7 +16,7 @@ export interface BusFeature {
   geometry: { type: "Point"; coordinates: [number, number] };
   properties: {
     id: number; line: string | null; company: string; companyCode: number; route: string | null;
-    ramp: boolean; bearing: number; speed: number; at: string;
+    ramp: boolean; speed: number; at: string;
   };
 }
 
@@ -47,7 +47,7 @@ export function toFeature(b: CompanyBus): BusFeature {
     properties: {
       id: b.id_bus, line: b.linea_label, company: b.eot_nombre, companyCode: b.company_code,
       route: b.route_id && b.route_id !== NO_ROUTE ? b.route_id : null, ramp: b.tiene_rampa === true,
-      bearing: b.rumbo, speed: b.velocidad, at: b.fecha_hora,
+      speed: b.velocidad, at: b.fecha_hora,
     },
   };
 }

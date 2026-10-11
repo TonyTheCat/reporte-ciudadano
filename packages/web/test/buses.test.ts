@@ -39,7 +39,7 @@ describe("colectivos en vivo", () => {
     const { liveBuses } = await load();
     const out = liveBuses([bus(1, 600), bus(2, 600), bus(1, 30), bus(1, 45), bus(3, 10, { latitude: null })], NOW);
     expect(out.map((f) => [f.properties.id, f.properties.at])).toEqual([[1, new Date(NOW - 30_000).toISOString()]]);
-    expect(out[0]).toMatchObject({ geometry: { coordinates: [-57.6, -25.3] }, properties: { line: "41 - 1", bearing: 90, speed: 20, companyCode: 22, route: "00d2", ramp: true } });
+    expect(out[0]).toMatchObject({ geometry: { coordinates: [-57.6, -25.3] }, properties: { line: "41 - 1", speed: 20, companyCode: 22, route: "00d2", ramp: true } });
   });
 
   it("junta los buses de todas las empresas aunque una no responda", async () => {
