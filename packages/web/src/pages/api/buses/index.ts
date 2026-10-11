@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
-import { currentBuses } from "../../lib/server/buses";
-import { error, handle, json } from "../../lib/server/http";
+import { currentBuses } from "../../../lib/server/buses";
+import { error, handle, json } from "../../../lib/server/http";
 
 export const GET: APIRoute = handle(async () => {
   try {

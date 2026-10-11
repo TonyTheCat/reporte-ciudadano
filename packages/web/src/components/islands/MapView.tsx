@@ -3,7 +3,8 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STATUS_LABEL, type Status } from "@rc/core/status";
 import { timeAgo } from "../../lib/format";
-import { addBusLayers, addReportLayers, ASU_BOUNDS, BASEMAP_STYLE, setBusesVisible, setReportFilters, STATUS_COLORS, collapseAttribution } from "../../lib/client/map";
+import { busLayer } from "../../lib/client/buses";
+import { addReportLayers, ASU_BOUNDS, BASEMAP_STYLE, setReportFilters, STATUS_COLORS, collapseAttribution } from "../../lib/client/map";
 
 interface Category { slug: string; name: string; icon: string; color: string }
 interface ListItem {
@@ -32,6 +33,7 @@ export default function MapView({ categories, initial, home }: {
   const [sheet, setSheet] = useState<"peek" | "open">("peek");
   const [loading, setLoading] = useState(false);
   const [buses, setBuses] = useState(readBuses);
+  const busesRef = useRef<ReturnType<typeof busLayer>>(undefined);
   const [mapReady, setMapReady] = useState(false);
   const filters = useMemo(() => ({ category: category || undefined, status: status || undefined }), [category, status]);
   const filtersRef = useRef(filters);
@@ -58,7 +60,7 @@ export default function MapView({ categories, initial, home }: {
 
     map.on("load", () => {
       addReportLayers(map, filtersRef.current);
-      addBusLayers(map);
+      busesRef.current = busLayer(map);
       setMapReady(true);
       refreshList();
     });
@@ -79,15 +81,7 @@ export default function MapView({ categories, initial, home }: {
         .setDOMContent(popupContent(p))
         .addTo(map);
     });
-    map.on("click", "bus-points", (e) => {
-      const f = e.features?.[0];
-      if (!f) return;
-      new maplibregl.Popup({ offset: 12, maxWidth: "260px", closeButton: false })
-        .setLngLat((f.geometry as any).coordinates)
-        .setDOMContent(busPopupContent(f.properties as any))
-        .addTo(map);
-    });
-    for (const layer of ["clusters", "report-points", "bus-points"]) {
+    for (const layer of ["clusters", "report-points"]) {
       map.on("mouseenter", layer, () => (map.getCanvas().style.cursor = "pointer"));
       map.on("mouseleave", layer, () => (map.getCanvas().style.cursor = ""));
     }
@@ -96,6 +90,7 @@ export default function MapView({ categories, initial, home }: {
     window.addEventListener("rc:home", onHome);
     return () => {
       window.removeEventListener("rc:home", onHome);
+      busesRef.current?.destroy();
       map.remove();
     };
   }, []);
@@ -107,33 +102,10 @@ export default function MapView({ categories, initial, home }: {
     refreshList();
   }, [filters]);
 
-  // Colectivos en vivo: mientras la capa está prendida y la pestaña a la vista, se piden cada 10 s.
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) return;
-    setBusesVisible(map, buses);
+    if (!mapReady) return;
+    busesRef.current?.show(buses);
     saveBuses(buses);
-    if (!buses) return;
-    let ctrl: AbortController | undefined;
-    const load = async () => {
-      if (document.visibilityState !== "visible") return;
-      ctrl?.abort();
-      ctrl = new AbortController();
-      try {
-        const res = await fetch("/api/buses", { signal: ctrl.signal });
-        if (res.ok) (map.getSource("buses") as maplibregl.GeoJSONSource | undefined)?.setData(await res.json());
-      } catch {
-        /* sin conexión o cancelado: queda la última posición */
-      }
-    };
-    load();
-    const every = setInterval(load, 10_000);
-    document.addEventListener("visibilitychange", load);
-    return () => {
-      clearInterval(every);
-      document.removeEventListener("visibilitychange", load);
-      ctrl?.abort();
-    };
   }, [buses, mapReady]);
 
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -272,19 +244,6 @@ function popupContent(p: { code: string; slug: string; title: string; status: St
   more.textContent = "Ver caso →";
   a.append(title, meta, more);
   div.append(a);
-  return div;
-}
-
-function busPopupContent(p: { line: string | null; company: string; speed: number; at: string }) {
-  const div = document.createElement("div");
-  div.className = "p-3";
-  const title = document.createElement("p");
-  title.className = "font-semibold text-fg";
-  title.textContent = p.line ? `🚌 Línea ${p.line}` : "🚌 Sin recorrido asignado";
-  const meta = document.createElement("p");
-  meta.className = "mt-1 text-xs text-fg-subtle";
-  meta.textContent = `${p.company} · ${p.speed > 0 ? `${Math.round(p.speed)} km/h` : "detenido"} · ${timeAgo(p.at)}`;
-  div.append(title, meta);
   return div;
 }
 
