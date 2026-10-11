@@ -1,12 +1,14 @@
 import { Popup, type ExpressionSpecification, type GeoJSONSource, type Map as MLMap, type MapLayerMouseEvent } from "maplibre-gl";
 import { timeAgo } from "../format";
+import { trackHeadings, type Track } from "./bus-heading";
 
 /** Un colectivo como lo devuelve /api/buses (ver lib/server/buses.ts). */
 interface BusProps {
   id: number; line: string | null; company: string; companyCode: number; route: string | null;
   ramp: boolean; bearing: number; speed: number; at: string;
 }
-interface Bus { type: "Feature"; geometry: { type: "Point"; coordinates: [number, number] }; properties: BusProps & { color: string } }
+// `heading`: rumbo calculado (bus-heading.ts); sin él, el bus no lleva flecha.
+interface Bus { type: "Feature"; geometry: { type: "Point"; coordinates: [number, number] }; properties: BusProps & { color: string; heading?: number } }
 interface Route { type: "Feature"; geometry: GeoJSON.Geometry; properties: { line: string | null; direction: string | null; from: string | null; to: string | null } }
 
 const REFRESH_MS = 10_000;
@@ -23,7 +25,7 @@ const LINE_COLORS = ["#d6336c", "#1971c2", "#2b8a3e", "#e8590c", "#7048e8", "#0c
 // Ícono "directions_bus" de Material Icons (Google, Apache-2.0), el mismo dibujo de colectivo que usa Google Maps.
 const BUS_PATH = "M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z";
 // Íconos al doble de resolución (pixelRatio 2). El de rumbo comparte centro con el del bus y asoma por encima.
-const BUS_SIZE = 56, HEADING_SIZE = 88, BADGE_SIZE = 26;
+const BUS_SIZE = 56, HEADING_SIZE = 116, BADGE_SIZE = 26;
 const BUS_LAYERS = ["bus-dots", "bus-heading", "bus-points", "bus-ramp", "bus-labels", "bus-route", "bus-route-arrows"];
 
 export function lineColor(line: string | null): string {
@@ -61,9 +63,9 @@ function busIcon(color: string): ImageData {
 function headingIcon(): ImageData {
   const ctx = canvas(HEADING_SIZE), c = HEADING_SIZE / 2, edge = c - BUS_SIZE / 2;
   ctx.beginPath();
-  ctx.moveTo(c, 1);
-  ctx.lineTo(c + 11, edge + 5);
-  ctx.lineTo(c - 11, edge + 5);
+  ctx.moveTo(c, 2);
+  ctx.lineTo(c + 17, edge + 8);
+  ctx.lineTo(c - 17, edge + 8);
   ctx.closePath();
   ctx.fillStyle = "#343a40";
   ctx.fill();
@@ -134,9 +136,9 @@ function addLayers(map: MLMap) {
     paint: { "circle-color": ["get", "color"], "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 3, 12, 6], "circle-stroke-width": 1, "circle-stroke-color": "#fff" },
   }, before);
   map.addLayer({
-    id: "bus-heading", type: "symbol", source: "buses", minzoom: 12,
+    id: "bus-heading", type: "symbol", source: "buses", minzoom: 12, filter: ["has", "heading"],
     layout: {
-      ...hidden, "icon-image": "rc-bus-heading", "icon-rotate": ["get", "bearing"], "icon-rotation-alignment": "map",
+      ...hidden, "icon-image": "rc-bus-heading", "icon-rotate": ["get", "heading"], "icon-rotation-alignment": "map",
       "icon-allow-overlap": true, "icon-ignore-placement": true, "icon-size": size,
     },
   }, before);
@@ -169,6 +171,7 @@ export function busLayer(map: MLMap) {
   let ctrl: AbortController | undefined;
   let frame = 0;
   let shown: Bus[] = [];
+  let tracks = new Map<number, Track>();
   let selected: { id: number; popup: Popup } | undefined;
 
   const source = (id: string) => map.getSource(id) as GeoJSONSource | undefined;
@@ -212,7 +215,11 @@ export function busLayer(map: MLMap) {
       const res = await fetch("/api/buses", { signal: ctrl.signal });
       if (!res.ok) return;
       const data = (await res.json()) as { features: { type: "Feature"; geometry: Bus["geometry"]; properties: BusProps }[] };
-      glide(data.features.map((f) => ({ ...f, properties: { ...f.properties, color: lineColor(f.properties.line) } })));
+      tracks = trackHeadings(tracks, data.features.map((f) => ({ id: f.properties.id, at: f.geometry.coordinates, bearing: f.properties.bearing })));
+      glide(data.features.map((f) => {
+        const heading = tracks.get(f.properties.id)?.heading;
+        return { ...f, properties: { ...f.properties, color: lineColor(f.properties.line), ...(heading === undefined ? {} : { heading }) } };
+      }));
     } catch {
       /* sin conexión o cancelado: queda la última posición */
     }
@@ -283,6 +290,8 @@ export function busLayer(map: MLMap) {
         ctrl?.abort();
         cancelAnimationFrame(frame);
         selected?.popup.remove();
+        // Al volver a prenderla, el movimiento desde una posición vieja no dice hacia dónde va el bus.
+        tracks = new Map();
       }
     },
     destroy() {
