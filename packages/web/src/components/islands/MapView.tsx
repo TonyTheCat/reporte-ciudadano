@@ -3,7 +3,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STATUS_LABEL, type Status } from "@rc/core/status";
 import { timeAgo } from "../../lib/format";
-import { addReportLayers, ASU_BOUNDS, BASEMAP_STYLE, setReportFilters, STATUS_COLORS, collapseAttribution } from "../../lib/client/map";
+import { addBusLayers, addReportLayers, ASU_BOUNDS, BASEMAP_STYLE, setBusesVisible, setReportFilters, STATUS_COLORS, collapseAttribution } from "../../lib/client/map";
 
 interface Category { slug: string; name: string; icon: string; color: string }
 interface ListItem {
@@ -31,6 +31,8 @@ export default function MapView({ categories, initial, home }: {
   const [items, setItems] = useState<ListItem[]>([]);
   const [sheet, setSheet] = useState<"peek" | "open">("peek");
   const [loading, setLoading] = useState(false);
+  const [buses, setBuses] = useState(readBuses);
+  const [mapReady, setMapReady] = useState(false);
   const filters = useMemo(() => ({ category: category || undefined, status: status || undefined }), [category, status]);
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
@@ -56,6 +58,8 @@ export default function MapView({ categories, initial, home }: {
 
     map.on("load", () => {
       addReportLayers(map, filtersRef.current);
+      addBusLayers(map);
+      setMapReady(true);
       refreshList();
     });
     map.on("moveend", () => {
@@ -75,7 +79,15 @@ export default function MapView({ categories, initial, home }: {
         .setDOMContent(popupContent(p))
         .addTo(map);
     });
-    for (const layer of ["clusters", "report-points"]) {
+    map.on("click", "bus-points", (e) => {
+      const f = e.features?.[0];
+      if (!f) return;
+      new maplibregl.Popup({ offset: 12, maxWidth: "260px", closeButton: false })
+        .setLngLat((f.geometry as any).coordinates)
+        .setDOMContent(busPopupContent(f.properties as any))
+        .addTo(map);
+    });
+    for (const layer of ["clusters", "report-points", "bus-points"]) {
       map.on("mouseenter", layer, () => (map.getCanvas().style.cursor = "pointer"));
       map.on("mouseleave", layer, () => (map.getCanvas().style.cursor = ""));
     }
@@ -94,6 +106,35 @@ export default function MapView({ categories, initial, home }: {
     setReportFilters(map, filters);
     refreshList();
   }, [filters]);
+
+  // Colectivos en vivo: mientras la capa está prendida y la pestaña a la vista, se piden cada 10 s.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    setBusesVisible(map, buses);
+    saveBuses(buses);
+    if (!buses) return;
+    let ctrl: AbortController | undefined;
+    const load = async () => {
+      if (document.visibilityState !== "visible") return;
+      ctrl?.abort();
+      ctrl = new AbortController();
+      try {
+        const res = await fetch("/api/buses", { signal: ctrl.signal });
+        if (res.ok) (map.getSource("buses") as maplibregl.GeoJSONSource | undefined)?.setData(await res.json());
+      } catch {
+        /* sin conexión o cancelado: queda la última posición */
+      }
+    };
+    load();
+    const every = setInterval(load, 10_000);
+    document.addEventListener("visibilitychange", load);
+    return () => {
+      clearInterval(every);
+      document.removeEventListener("visibilitychange", load);
+      ctrl?.abort();
+    };
+  }, [buses, mapReady]);
 
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   function refreshList() {
@@ -135,13 +176,19 @@ export default function MapView({ categories, initial, home }: {
             </FilterChip>
           ))}
         </div>
-        <div className="pointer-events-auto inline-flex rounded-xl bg-surface p-1 shadow ring-1 ring-line">
-          {STATUS_FILTERS.map((s) => (
-            <button key={s.value} onClick={() => setStatus(s.value)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${status === s.value ? "bg-brand-600 text-white" : "text-fg-muted"}`}>
-              {s.label}
-            </button>
-          ))}
+        <div className="flex gap-2">
+          <div className="pointer-events-auto inline-flex rounded-xl bg-surface p-1 shadow ring-1 ring-line">
+            {STATUS_FILTERS.map((s) => (
+              <button key={s.value} onClick={() => setStatus(s.value)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${status === s.value ? "bg-brand-600 text-white" : "text-fg-muted"}`}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => setBuses(!buses)} aria-pressed={buses}
+            className={`pointer-events-auto rounded-xl px-3 text-xs font-semibold shadow ring-1 ${buses ? "bg-brand-600 text-white ring-transparent" : "bg-surface text-fg-muted ring-line"}`}>
+            <span aria-hidden>🚌</span> Colectivos
+          </button>
         </div>
       </div>
 
@@ -228,12 +275,43 @@ function popupContent(p: { code: string; slug: string; title: string; status: St
   return div;
 }
 
+function busPopupContent(p: { line: string | null; company: string; speed: number; at: string }) {
+  const div = document.createElement("div");
+  div.className = "p-3";
+  const title = document.createElement("p");
+  title.className = "font-semibold text-fg";
+  title.textContent = p.line ? `🚌 Línea ${p.line}` : "🚌 Sin recorrido asignado";
+  const meta = document.createElement("p");
+  meta.className = "mt-1 text-xs text-fg-subtle";
+  meta.textContent = `${p.company} · ${p.speed > 0 ? `${Math.round(p.speed)} km/h` : "detenido"} · ${timeAgo(p.at)}`;
+  div.append(title, meta);
+  return div;
+}
+
 function readView(): { center: [number, number]; zoom: number } | null {
   try {
     const v = JSON.parse(sessionStorage.getItem("rc:view") ?? "null");
     return v && Array.isArray(v.center) ? v : null;
   } catch {
     return null;
+  }
+}
+
+// La capa de colectivos sigue prendida al recargar, mientras dure la pestaña (como la vista del mapa).
+function readBuses(): boolean {
+  try {
+    return sessionStorage.getItem("rc:buses") === "1";
+  } catch {
+    return false;
+  }
+}
+
+function saveBuses(on: boolean) {
+  try {
+    if (on) sessionStorage.setItem("rc:buses", "1");
+    else sessionStorage.removeItem("rc:buses");
+  } catch {
+    /* sin almacenamiento */
   }
 }
 

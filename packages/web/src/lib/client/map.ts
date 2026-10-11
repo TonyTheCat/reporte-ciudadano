@@ -1,4 +1,4 @@
-import { setWorkerUrl, type Map as MLMap } from "maplibre-gl";
+import { setWorkerUrl, type ExpressionSpecification, type Map as MLMap } from "maplibre-gl";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 
 // MapLibre 6 es solo ESM y con bundlers hay que indicarle la URL de su worker (Vite la empaqueta aparte).
@@ -51,6 +51,90 @@ export function addReportLayers(map: MLMap, filters: { category?: string; status
       "circle-opacity": ["match", ["get", "status"], "resuelto", 0.55, 1],
     },
   });
+}
+
+const BUS_COLOR = "#343a40";
+
+// Ícono "directions_bus" de Material Icons (Google, Apache-2.0), el mismo dibujo de colectivo que usa Google Maps.
+const BUS_PATH = "M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z";
+// Los dos íconos se dibujan al doble de resolución (pixelRatio 2) y comparten centro.
+const BUS_SIZE = 44, HEADING_SIZE = 64;
+
+function canvas(size: number) {
+  const ctx = document.createElement("canvas").getContext("2d")!;
+  ctx.canvas.width = ctx.canvas.height = size;
+  return ctx;
+}
+
+/** Colectivo: círculo con el dibujo del bus en blanco. No gira: el rumbo lo marca la flecha de busHeadingIcon. */
+function busIcon(): ImageData {
+  const ctx = canvas(BUS_SIZE), c = BUS_SIZE / 2;
+  ctx.beginPath();
+  ctx.arc(c, c, c - 2, 0, Math.PI * 2);
+  ctx.fillStyle = BUS_COLOR;
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "#fff";
+  ctx.stroke();
+  // El path es de 24x24: se escala a 26 px y se centra.
+  ctx.translate(c - 13, c - 13);
+  ctx.scale(26 / 24, 26 / 24);
+  ctx.fillStyle = "#fff";
+  ctx.fill(new Path2D(BUS_PATH));
+  return ctx.getImageData(0, 0, BUS_SIZE, BUS_SIZE);
+}
+
+/** Flecha que asoma por arriba del círculo del bus; la capa la gira según el rumbo. */
+function busHeadingIcon(): ImageData {
+  const ctx = canvas(HEADING_SIZE), c = HEADING_SIZE / 2, edge = c - BUS_SIZE / 2;
+  ctx.beginPath();
+  ctx.moveTo(c, 1);
+  ctx.lineTo(c + 9, edge + 5);
+  ctx.lineTo(c - 9, edge + 5);
+  ctx.closePath();
+  ctx.fillStyle = BUS_COLOR;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#fff";
+  ctx.stroke();
+  return ctx.getImageData(0, 0, HEADING_SIZE, HEADING_SIZE);
+}
+
+/** Fuente y capas de los colectivos en vivo (datos del VMT, ver /api/buses). Arrancan ocultas, debajo de los reportes. */
+export function addBusLayers(map: MLMap) {
+  // "bus" ya existe en el sprite de la base (paradas); el nuestro lleva prefijo.
+  if (!map.hasImage("rc-bus")) map.addImage("rc-bus", busIcon(), { pixelRatio: 2 });
+  if (!map.hasImage("rc-bus-heading")) map.addImage("rc-bus-heading", busHeadingIcon(), { pixelRatio: 2 });
+  map.addSource("buses", { type: "geojson", data: { type: "FeatureCollection", features: [] }, attribution: "Colectivos: VMT/MOPC (prototipo)" });
+  const size: ExpressionSpecification = ["interpolate", ["linear"], ["zoom"], 11, 0.8, 16, 1.2];
+  map.addLayer({
+    id: "bus-heading", type: "symbol", source: "buses",
+    layout: {
+      visibility: "none",
+      "icon-image": "rc-bus-heading", "icon-rotate": ["get", "bearing"], "icon-rotation-alignment": "map",
+      "icon-allow-overlap": true, "icon-ignore-placement": true, "icon-size": size,
+    },
+  }, "clusters");
+  map.addLayer({
+    id: "bus-points", type: "symbol", source: "buses",
+    layout: {
+      visibility: "none",
+      "icon-image": "rc-bus", "icon-allow-overlap": true, "icon-ignore-placement": true, "icon-size": size,
+    },
+  }, "clusters");
+  map.addLayer({
+    id: "bus-labels", type: "symbol", source: "buses", minzoom: 13,
+    layout: {
+      visibility: "none",
+      "text-field": ["coalesce", ["get", "line"], ""], "text-font": ["Noto Sans Bold"], "text-size": 11,
+      "text-offset": [0, 1.4], "text-anchor": "top", "text-optional": true,
+    },
+    paint: { "text-color": BUS_COLOR, "text-halo-color": "#fff", "text-halo-width": 1.5 },
+  }, "clusters");
+}
+
+export function setBusesVisible(map: MLMap, visible: boolean) {
+  for (const id of ["bus-heading", "bus-points", "bus-labels"]) map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
 }
 
 export function setReportFilters(map: MLMap, filters: { category?: string; status?: string }) {
