@@ -21,6 +21,7 @@ export default $config({
     const { createModeration } = await import("./infra/moderation");
     const { createWeb } = await import("./infra/web");
     const { createBudget } = await import("./infra/budget");
+    const { createBusRoutesSync } = await import("./infra/buses");
 
     // En `sst dev` no se crea VPC ni RDS: todo corre contra Postgres local.
     const vpc = $dev ? undefined : createVpc();
@@ -28,6 +29,7 @@ export default $config({
     const db = createDatabase(vpc);
     const { media } = createStorage();
     createModeration(media, db, lambdaVpc);
+    if (lambdaVpc) createBusRoutesSync(db, lambdaVpc);
     const { router, auth, siteUrl } = createWeb({ media, db, vpc: lambdaVpc });
     if ($app.stage === "production") createBudget(30);
 

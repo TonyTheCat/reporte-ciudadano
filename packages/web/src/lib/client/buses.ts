@@ -245,7 +245,9 @@ export function busLayer(map: MLMap) {
     if (!p.route) return;
     try {
       const res = await fetch(`/api/buses/route?${new URLSearchParams({ company: String(p.companyCode), route: p.route })}`);
-      if (!res.ok || selected?.popup !== popup) return;
+      if (selected?.popup !== popup) return;
+      if (res.status === 404) content.setRoute(null);
+      if (!res.ok) return;
       const route = (await res.json()) as Route;
       source("bus-route")?.setData({ ...route, properties: { ...route.properties, color: p.color } });
       content.setRoute(route.properties);
@@ -311,8 +313,9 @@ function popupContent(p: BusProps & { color: string }) {
   root.append(head, route, meta);
   return {
     root,
-    setRoute(r: Route["properties"]) {
-      route.textContent = `De ${capitalize(r.from)} a ${capitalize(r.to)} · ${r.direction}`;
+    /** `null`: el VMT no publicó el recorrido que reporta el bus. */
+    setRoute(r: Route["properties"] | null) {
+      route.textContent = r ? `De ${capitalize(r.from)} a ${capitalize(r.to)} · ${r.direction}` : "Recorrido no publicado por el VMT";
     },
   };
 }

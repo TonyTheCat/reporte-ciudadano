@@ -9,6 +9,7 @@
     "db:up": "docker compose up -d db",
     "db:migrate": "pnpm --filter @rc/core migrate",
     "db:seed": "pnpm --filter @rc/core seed",
+    "db:bus-routes": "pnpm --filter @rc/core bus-routes",
     "test": "pnpm --filter @rc/core test",
     "typecheck": "pnpm -r typecheck"
   },
