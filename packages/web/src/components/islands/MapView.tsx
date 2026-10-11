@@ -3,6 +3,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STATUS_LABEL, type Status } from "@rc/core/status";
 import { timeAgo } from "../../lib/format";
+import { busLayer } from "../../lib/client/buses";
 import { addReportLayers, ASU_BOUNDS, BASEMAP_STYLE, setReportFilters, STATUS_COLORS, collapseAttribution } from "../../lib/client/map";
 
 interface Category { slug: string; name: string; icon: string; color: string }
@@ -31,6 +32,9 @@ export default function MapView({ categories, initial, home }: {
   const [items, setItems] = useState<ListItem[]>([]);
   const [sheet, setSheet] = useState<"peek" | "open">("peek");
   const [loading, setLoading] = useState(false);
+  const [buses, setBuses] = useState(readBuses);
+  const busesRef = useRef<ReturnType<typeof busLayer>>(undefined);
+  const [mapReady, setMapReady] = useState(false);
   const filters = useMemo(() => ({ category: category || undefined, status: status || undefined }), [category, status]);
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
@@ -56,6 +60,8 @@ export default function MapView({ categories, initial, home }: {
 
     map.on("load", () => {
       addReportLayers(map, filtersRef.current);
+      busesRef.current = busLayer(map);
+      setMapReady(true);
       refreshList();
     });
     map.on("moveend", () => {
@@ -84,6 +90,7 @@ export default function MapView({ categories, initial, home }: {
     window.addEventListener("rc:home", onHome);
     return () => {
       window.removeEventListener("rc:home", onHome);
+      busesRef.current?.destroy();
       map.remove();
     };
   }, []);
@@ -94,6 +101,12 @@ export default function MapView({ categories, initial, home }: {
     setReportFilters(map, filters);
     refreshList();
   }, [filters]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    busesRef.current?.show(buses);
+    saveBuses(buses);
+  }, [buses, mapReady]);
 
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   function refreshList() {
@@ -135,13 +148,19 @@ export default function MapView({ categories, initial, home }: {
             </FilterChip>
           ))}
         </div>
-        <div className="pointer-events-auto inline-flex rounded-xl bg-surface p-1 shadow ring-1 ring-line">
-          {STATUS_FILTERS.map((s) => (
-            <button key={s.value} onClick={() => setStatus(s.value)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${status === s.value ? "bg-brand-600 text-white" : "text-fg-muted"}`}>
-              {s.label}
-            </button>
-          ))}
+        <div className="flex gap-2">
+          <div className="pointer-events-auto inline-flex rounded-xl bg-surface p-1 shadow ring-1 ring-line">
+            {STATUS_FILTERS.map((s) => (
+              <button key={s.value} onClick={() => setStatus(s.value)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${status === s.value ? "bg-brand-600 text-white" : "text-fg-muted"}`}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => setBuses(!buses)} aria-pressed={buses}
+            className={`pointer-events-auto rounded-xl px-3 text-xs font-semibold shadow ring-1 ${buses ? "bg-brand-600 text-white ring-transparent" : "bg-surface text-fg-muted ring-line"}`}>
+            <span aria-hidden>🚌</span> Colectivos
+          </button>
         </div>
       </div>
 
@@ -234,6 +253,24 @@ function readView(): { center: [number, number]; zoom: number } | null {
     return v && Array.isArray(v.center) ? v : null;
   } catch {
     return null;
+  }
+}
+
+// La capa de colectivos sigue prendida al recargar, mientras dure la pestaña (como la vista del mapa).
+function readBuses(): boolean {
+  try {
+    return sessionStorage.getItem("rc:buses") === "1";
+  } catch {
+    return false;
+  }
+}
+
+function saveBuses(on: boolean) {
+  try {
+    if (on) sessionStorage.setItem("rc:buses", "1");
+    else sessionStorage.removeItem("rc:buses");
+  } catch {
+    /* sin almacenamiento */
   }
 }
 
