@@ -11,7 +11,7 @@ const ITINERARIES_TIMEOUT_MS = 60_000;
 export interface BusRoute {
   type: "Feature";
   geometry: { type: "MultiLineString"; coordinates: [number, number][][] };
-  properties: { line: string; direction: string; from: string; to: string };
+  properties: { line: string | null; direction: string | null; from: string | null; to: string | null };
 }
 
 /**
@@ -24,7 +24,9 @@ export async function syncBusRoutes(): Promise<{ routes: number; failed: number[
   const failed: number[] = [];
   for (const code of codes) {
     try {
-      const itineraries = await vmt<VmtItinerary>(`/itinerarios?cod_catalogo=${code}`, ITINERARIES_TIMEOUT_MS);
+      // Un itinerario sin ruta o sin trazado no sirve para dibujar el recorrido de ningún bus.
+      const itineraries = (await vmt<VmtItinerary>(`/itinerarios?cod_catalogo=${code}`, ITINERARIES_TIMEOUT_MS))
+        .filter((i) => i.ruta_hex && i.geojson);
       if (itineraries.length) fetched.set(code, itineraries);
     } catch (err) {
       console.error(err);
@@ -63,7 +65,7 @@ export async function syncBusRoutesIfEmpty(): Promise<boolean> {
 
 /** Recorrido de un bus: su `route` es el `ruta_hex` de uno de los itinerarios de su empresa. */
 export async function getBusRoute(companyCode: number, route: string): Promise<BusRoute | null> {
-  const [row] = await sql()<{ geometry: BusRoute["geometry"]; line: string; direction: string; origin: string; destination: string }[]>`
+  const [row] = await sql()<{ geometry: BusRoute["geometry"]; line: string | null; direction: string | null; origin: string | null; destination: string | null }[]>`
     SELECT ST_AsGeoJSON(geom, 6)::json AS geometry, line, direction, origin, destination
     FROM bus_routes WHERE company_code = ${companyCode} AND route_hex = ${route.toLowerCase()}`;
   if (!row) return null;

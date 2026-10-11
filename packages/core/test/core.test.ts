@@ -326,7 +326,10 @@ describe("recorridos de colectivos", () => {
     stubVmt({
       "/empresas": () => ok([{ cod_catalogo: 22 }, { cod_catalogo: 44 }]),
       "/itinerarios?cod_catalogo=22": () => ok([itinerary("00D2", "ASUNCIÓN"), itinerary("00d3", "LAMBARÉ")]),
-      "/itinerarios?cod_catalogo=44": () => ok([itinerary("0100", "LUQUE")]),
+      "/itinerarios?cod_catalogo=44": () => ok([
+        { ...itinerary("0100", "LUQUE"), ruta_linea: null, sentido: null },
+        { ...itinerary("0101", "LUQUE"), geojson: null },
+      ]),
     });
     expect(await syncBusRoutes()).toEqual({ routes: 3, failed: [] });
     expect(await getBusRoute(22, "00d2")).toEqual({
@@ -337,6 +340,8 @@ describe("recorridos de colectivos", () => {
     expect((await getBusRoute(22, "00D3"))?.properties.to).toBe("LAMBARÉ");
     expect(await getBusRoute(22, "0100")).toBeNull();
     expect(await getBusRoute(999, "00d2")).toBeNull();
+    expect((await getBusRoute(44, "0100"))?.properties).toEqual({ line: null, direction: null, from: "LAMBARÉ", to: "LUQUE" });
+    expect(await getBusRoute(44, "0101")).toBeNull();
   });
 
   it("una empresa que falla o vuelve vacía conserva sus recorridos; una que ya no está se borra", async () => {

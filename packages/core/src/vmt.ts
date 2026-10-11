@@ -12,9 +12,10 @@ export interface VmtBus {
   id_bus: number; latitude: number; longitude: number; rumbo: number; velocidad: number;
   fecha_hora: string; linea_label: string | null; eot_nombre: string; route_id: string; tiene_rampa: boolean;
 }
+// Cualquier campo de un itinerario puede venir vacío (p. ej. ruta_linea en la empresa 31).
 export interface VmtItinerary {
-  ruta_hex: string; ruta_linea: string; sentido: string; origen: string; destino: string;
-  geojson: { type: "MultiLineString"; coordinates: [number, number][][] } | { type: "LineString"; coordinates: [number, number][] };
+  ruta_hex: string | null; ruta_linea: string | null; sentido: string | null; origen: string | null; destino: string | null;
+  geojson: { type: "MultiLineString"; coordinates: [number, number][][] } | { type: "LineString"; coordinates: [number, number][] } | null;
 }
 
 export async function vmt<T>(path: string, timeout = TIMEOUT_MS): Promise<T[]> {

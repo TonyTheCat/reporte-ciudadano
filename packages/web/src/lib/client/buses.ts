@@ -7,7 +7,7 @@ interface BusProps {
   ramp: boolean; bearing: number; speed: number; at: string;
 }
 interface Bus { type: "Feature"; geometry: { type: "Point"; coordinates: [number, number] }; properties: BusProps & { color: string } }
-interface Route { type: "Feature"; geometry: GeoJSON.Geometry; properties: { line: string; direction: string; from: string; to: string } }
+interface Route { type: "Feature"; geometry: GeoJSON.Geometry; properties: { line: string | null; direction: string | null; from: string | null; to: string | null } }
 
 const REFRESH_MS = 10_000;
 // Cada bus avanza de a poco hasta su última posición durante todo el intervalo, así el mapa se ve en movimiento
@@ -315,7 +315,13 @@ function popupContent(p: BusProps & { color: string }) {
     root,
     /** `null`: el VMT no publicó el recorrido que reporta el bus. */
     setRoute(r: Route["properties"] | null) {
-      route.textContent = r ? `De ${capitalize(r.from)} a ${capitalize(r.to)} · ${r.direction}` : "Recorrido no publicado por el VMT";
+      if (!r) {
+        route.textContent = "Recorrido no publicado por el VMT";
+        return;
+      }
+      // El VMT a veces no manda los extremos o el sentido.
+      const ends = r.from && r.to ? `De ${capitalize(r.from)} a ${capitalize(r.to)}` : null;
+      route.textContent = [ends, r.direction].filter(Boolean).join(" · ");
     },
   };
 }
