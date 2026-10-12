@@ -49,10 +49,12 @@ Arranca `postgis/postgis:16-3.4` en **localhost:5433** (usuario `postgres`, cont
 ```bash
 pnpm db:migrate
 pnpm db:seed -- --demo
+pnpm db:bus-routes
 ```
 
 - `db:migrate` aplica en orden los `.sql` de `packages/core/migrations/` que aún no corrieron (se registran en `schema_migrations`).
 - `db:seed` descarga de geoBoundaries los 17 departamentos + Asunción y sus distritos (necesita internet). Con `--demo` agrega reportes de ejemplo en Asunción, San Lorenzo, Encarnación y Ciudad del Este.
+- `db:bus-routes` trae del prototipo del VMT los recorridos de los colectivos (tarda un par de minutos). En AWS los actualiza una vez por día la Lambda `BusRoutesSync`.
 
 ### 4. Correr la web
 
@@ -108,6 +110,7 @@ Desde la raíz:
 | `pnpm db:up` | Levanta PostGIS en Docker |
 | `pnpm db:migrate` | Aplica migraciones pendientes |
 | `pnpm db:seed [-- --demo]` | Carga áreas administrativas (y reportes de ejemplo) |
+| `pnpm db:bus-routes` | Carga los recorridos de los colectivos desde el VMT |
 | `pnpm test` | Tests de dominio y GIS (`packages/core`) contra PostGIS |
 | `pnpm --filter @rc/functions test` | Tests de las Lambdas (imágenes, correos) |
 | `pnpm --filter @rc/web test` | Tests de la web (respuestas a través del adaptador de Lambda) |

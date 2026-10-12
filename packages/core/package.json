@@ -8,6 +8,7 @@
   "scripts": {
     "migrate": "tsx scripts/migrate.ts",
     "seed": "tsx scripts/seed.ts",
+    "bus-routes": "tsx scripts/sync-bus-routes.ts",
     "test": "vitest run",
     "typecheck": "tsc -p ."
   },

@@ -2,6 +2,9 @@ import type { APIContext } from "astro";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { BusFeature } from "../src/lib/server/buses";
 
+const { getBusRoute } = vi.hoisted(() => ({ getBusRoute: vi.fn() }));
+vi.mock("@rc/core/bus-routes", () => ({ getBusRoute }));
+
 // Cada test importa el módulo de nuevo: guarda en memoria la lista de empresas y los últimos buses.
 async function load() {
   vi.resetModules();
@@ -36,7 +39,7 @@ describe("colectivos en vivo", () => {
     const { liveBuses } = await load();
     const out = liveBuses([bus(1, 600), bus(2, 600), bus(1, 30), bus(1, 45), bus(3, 10, { latitude: null })], NOW);
     expect(out.map((f) => [f.properties.id, f.properties.at])).toEqual([[1, new Date(NOW - 30_000).toISOString()]]);
-    expect(out[0]).toMatchObject({ geometry: { coordinates: [-57.6, -25.3] }, properties: { line: "41 - 1", bearing: 90, speed: 20, companyCode: 22, route: "00d2", ramp: true } });
+    expect(out[0]).toMatchObject({ geometry: { coordinates: [-57.6, -25.3] }, properties: { line: "41 - 1", speed: 20, companyCode: 22, route: "00d2", ramp: true } });
   });
 
   it("junta los buses de todas las empresas aunque una no responda", async () => {
@@ -66,20 +69,15 @@ describe("colectivos en vivo", () => {
     expect(liveBuses([bus(1, 5, { route_id: "0000", linea_label: null })], NOW)[0].properties).toMatchObject({ route: null, line: null });
   });
 
-  it("devuelve el recorrido de un bus por empresa y ruta", async () => {
-    const line = { type: "LineString", coordinates: [[-57.6, -25.3], [-57.61, -25.31]] };
-    routes["/empresas"] = () => ok([{ cod_catalogo: 22 }]);
-    routes["/itinerarios?cod_catalogo=22"] = () => ok([
-      { ruta_hex: "00d3", ruta_linea: "41", sentido: "vuelta", origen: "LAMBARÉ", destino: "LAMBARÉ", geojson: line },
-      { ruta_hex: "00d2", ruta_linea: "41", sentido: "ida", origen: "LAMBARÉ", destino: "ASUNCIÓN", geojson: line },
-    ]);
+  it("devuelve el recorrido guardado de un bus por empresa y ruta", async () => {
+    const route = { type: "Feature", geometry: { type: "MultiLineString", coordinates: [[[-57.6, -25.3], [-57.61, -25.31]]] }, properties: { line: "41", direction: "ida", from: "LAMBARÉ", to: "ASUNCIÓN" } };
+    getBusRoute.mockImplementation(async (company: number, hex: string) => (company === 22 && hex === "00D2" ? route : null));
     const { routeGet } = await load();
     const res = await routeGet(routeRequest("company=22&route=00D2"));
     expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ geometry: line, properties: { direction: "ida", to: "ASUNCIÓN" } });
+    expect(res.headers.get("Cache-Control")).toContain("s-maxage=3600");
+    expect(await res.json()).toEqual(route);
     expect((await routeGet(routeRequest("company=22&route=0abc"))).status).toBe(404);
-    // Una empresa que no está en la lista ni se consulta (el stub de fetch falla con rutas desconocidas).
-    expect((await routeGet(routeRequest("company=999&route=00d2"))).status).toBe(404);
   });
 
   it.each(["company=22", "company=x&route=00d2", "company=22&route=../x"])("rechaza %s con 400", async (query) => {

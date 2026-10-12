@@ -1,6 +1,6 @@
 import path from "node:path";
 import postgres from "postgres";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 const ADMIN_URL = process.env.TEST_ADMIN_URL ?? "postgres://postgres:password@localhost:5433/postgres";
 const TEST_DB = "reporte_test";
@@ -302,5 +302,75 @@ describe("ciudad del usuario", () => {
     const [dept] = await sql()<{ id: number }[]>`SELECT id FROM admin_areas WHERE level = 1 LIMIT 1`;
     await expect(setHome("vecina-2", dept.id)).rejects.toMatchObject({ code: "validation" });
     await expect(setHome("vecina-2", 999999)).rejects.toMatchObject({ code: "validation" });
+  });
+});
+
+describe("recorridos de colectivos", () => {
+  const VMT = "https://sistemas.mopc.gov.py/prototipo_vmt/api";
+  const ok = (data: unknown[]) => new Response(JSON.stringify({ success: true, data }));
+  const line = { type: "LineString", coordinates: [[-57.6, -25.3], [-57.61, -25.31]] };
+  const itinerary = (hex: string, destino: string) => ({ ruta_hex: hex, ruta_linea: "41", sentido: "ida", origen: "LAMBARÉ", destino, geojson: line });
+  const stubVmt = (routes: Record<string, () => Response>) =>
+    vi.stubGlobal("fetch", async (url: string) => {
+      const route = routes[url.replace(VMT, "")];
+      if (!route) throw new Error(`fetch inesperado: ${url}`);
+      return route();
+    });
+
+  afterAll(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("guarda los recorridos del VMT y los devuelve por empresa y ruta", async () => {
+    const { syncBusRoutes, getBusRoute } = await import("../src/bus-routes");
+    stubVmt({
+      "/empresas": () => ok([{ cod_catalogo: 22 }, { cod_catalogo: 44 }]),
+      "/itinerarios?cod_catalogo=22": () => ok([itinerary("00D2", "ASUNCIÓN"), itinerary("00d3", "LAMBARÉ")]),
+      "/itinerarios?cod_catalogo=44": () => ok([
+        { ...itinerary("0100", "LUQUE"), ruta_linea: null, sentido: null },
+        { ...itinerary("0101", "LUQUE"), geojson: null },
+      ]),
+    });
+    expect(await syncBusRoutes()).toEqual({ routes: 3, failed: [] });
+    expect(await getBusRoute(22, "00d2")).toEqual({
+      type: "Feature",
+      geometry: { type: "MultiLineString", coordinates: [line.coordinates] },
+      properties: { line: "41", direction: "ida", from: "LAMBARÉ", to: "ASUNCIÓN" },
+    });
+    expect((await getBusRoute(22, "00D3"))?.properties.to).toBe("LAMBARÉ");
+    expect(await getBusRoute(22, "0100")).toBeNull();
+    expect(await getBusRoute(999, "00d2")).toBeNull();
+    expect((await getBusRoute(44, "0100"))?.properties).toEqual({ line: null, direction: null, from: "LAMBARÉ", to: "LUQUE" });
+    expect(await getBusRoute(44, "0101")).toBeNull();
+  });
+
+  it("una empresa que falla o vuelve vacía conserva sus recorridos; una que ya no está se borra", async () => {
+    const { syncBusRoutes, getBusRoute } = await import("../src/bus-routes");
+    stubVmt({
+      "/empresas": () => ok([{ cod_catalogo: 22 }, { cod_catalogo: 8 }]),
+      "/itinerarios?cod_catalogo=22": () => new Response("", { status: 503 }),
+      "/itinerarios?cod_catalogo=8": () => ok([itinerary("0200", "CAPIATÁ")]),
+    });
+    expect(await syncBusRoutes()).toEqual({ routes: 1, failed: [22] });
+    expect(await getBusRoute(22, "00d2")).not.toBeNull();
+    expect(await getBusRoute(8, "0200")).not.toBeNull();
+    expect(await getBusRoute(44, "0100")).toBeNull();
+
+    stubVmt({
+      "/empresas": () => ok([{ cod_catalogo: 22 }, { cod_catalogo: 8 }]),
+      "/itinerarios?cod_catalogo=22": () => ok([]),
+      "/itinerarios?cod_catalogo=8": () => ok([itinerary("0201", "CAPIATÁ")]),
+    });
+    await syncBusRoutes();
+    expect(await getBusRoute(22, "00d2")).not.toBeNull();
+    expect(await getBusRoute(8, "0200")).toBeNull();
+    expect(await getBusRoute(8, "0201")).not.toBeNull();
+  });
+
+  it("si no llega ningún recorrido falla sin tocar los guardados", async () => {
+    const { syncBusRoutes, getBusRoute } = await import("../src/bus-routes");
+    stubVmt({ "/empresas": () => ok([{ cod_catalogo: 22 }]), "/itinerarios?cod_catalogo=22": () => new Response("", { status: 503 }) });
+    await expect(syncBusRoutes()).rejects.toThrow("ningún recorrido");
+    expect(await getBusRoute(22, "00d2")).not.toBeNull();
   });
 });
