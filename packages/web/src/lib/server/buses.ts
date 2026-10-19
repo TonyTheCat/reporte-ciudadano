@@ -1,6 +1,7 @@
 /** Posición de los colectivos del área metropolitana, del prototipo del VMT (ver @rc/core/vmt). */
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { listBusRoutes } from "@rc/core/bus-routes";
+import { listPlaces } from "@rc/core/places";
 import { LATEST_BUSES_KEY, vmt, type VmtBus, type VmtCompany } from "@rc/core/vmt";
 import type { BusPoll } from "@rc/core/vmt-history";
 import { createHash } from "node:crypto";
@@ -173,3 +174,10 @@ const catalog = cached(HOUR_MS, async () => {
   return { body: JSON.stringify({ type: "FeatureCollection", version, features }), etag: `"${version}"` };
 });
 export const routesCatalog = () => catalog(null);
+
+/** Paradas y lugares para buscar la parada por nombre (ver @rc/core/places), armado una vez por hora por instancia. */
+const places = cached(HOUR_MS, async () => {
+  const file = await listPlaces();
+  return { body: JSON.stringify(file), etag: `"${file.version}"` };
+});
+export const placesIndex = () => places(null);

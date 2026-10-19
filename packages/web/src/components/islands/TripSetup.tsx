@@ -3,15 +3,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { normPlace, routeKey, STOP_CFG, stopDirections, stopOptions, type StopOption } from "@rc/core/bus-catalog";
 import { walkMinutes } from "@rc/core/departure";
 import { angleDiff, type LngLat } from "@rc/core/geo";
+import { KIND_LABEL, searchPlaces, type Place, type PlaceIndex } from "@rc/core/place-search";
 import { lineColor } from "../../lib/client/line-color";
+import { loadPlaces } from "../../lib/client/place-index";
 import { loadCatalog, type CatalogLoad } from "../../lib/client/route-catalog";
 import { DEFAULT_MARGIN_MIN, newTrip, PACES, type Trip } from "../../lib/client/trips";
 import { tripMap } from "../../lib/client/trip-map";
 import { capitalize, cardinal, companyName, distance } from "../../lib/client/transit-format";
 
 /**
- * Configurar un viaje: primero la parada (el VMT no publica paradas, la marca la persona), después las líneas que le
- * sirven ahí y por último cuánto tarda en llegar. Todo se calcula con el catálogo guardado en el teléfono.
+ * Configurar un viaje: primero la parada (buscada por nombre, calle o un lugar cercano, o marcada en el mapa), después
+ * las líneas que le sirven ahí y por último cuánto tarda en llegar. Todo se calcula con el catálogo guardado en el
+ * teléfono, y la búsqueda también: lo que se busca no llega al servidor.
  */
 export default function TripSetup({ hint, onSave, onCancel }: {
   /** Línea elegida desde el popup de un bus en el mapa: se dibuja para ayudar a marcar la parada y se preselecciona. */
@@ -34,6 +37,9 @@ export default function TripSetup({ hint, onSave, onCancel }: {
   const [locating, setLocating] = useState(false);
   const [direction, setDirection] = useState<number | null>(null);
   const [query, setQuery] = useState("");
+  // `undefined`: todavía no se pidió (se baja al empezar a buscar); `null`: no se pudo bajar.
+  const [places, setPlaces] = useState<PlaceIndex | null | undefined>(undefined);
+  const [placeQuery, setPlaceQuery] = useState("");
   const catalog = load?.catalog ?? null;
 
   useEffect(() => {
@@ -97,6 +103,19 @@ export default function TripSetup({ hint, onSave, onCancel }: {
     );
   }
 
+  const found = useMemo(() => (places ? searchPlaces(places, placeQuery) : []), [places, placeQuery]);
+
+  function preparePlaces() {
+    if (!places) loadPlaces().then(setPlaces);
+  }
+
+  function choose(p: Place) {
+    const at: LngLat = [p.lng, p.lat];
+    setStop(at);
+    mapRef.current?.flyTo(at, 17);
+    setPlaceQuery("");
+  }
+
   function toggle(id: string) {
     const next = new Set(picked);
     if (next.has(id)) next.delete(id);
@@ -122,14 +141,38 @@ export default function TripSetup({ hint, onSave, onCancel }: {
       {step === "stop" && (
         <section className="space-y-3" aria-labelledby="paso-parada">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="paso-parada" className="text-lg font-bold">{stop ? "¿Qué líneas te sirven acá?" : "Tocá tu parada en el mapa"}</h2>
+            <h2 id="paso-parada" className="text-lg font-bold">{stop ? "¿Qué líneas te sirven acá?" : "¿Dónde esperás el colectivo?"}</h2>
             <button className="btn-ghost py-2 text-sm" disabled={locating} onClick={() => locate((p) => { setStop(p); mapRef.current?.flyTo(p, 17); })}>
               {locating ? "Ubicándote…" : "📍 Estoy en la parada"}
             </button>
           </div>
+          <div className="space-y-1">
+            <label className="block">
+              <span className="sr-only">Buscar parada o lugar</span>
+              <input className="input py-2.5" type="search" placeholder="Buscá tu parada, calle o un lugar (ej. Shopping del Sol)" value={placeQuery}
+                onFocus={preparePlaces} onChange={(e) => setPlaceQuery(e.target.value)} />
+            </label>
+            {places === null && placeQuery && <p className="text-sm text-warning" role="status">No pudimos bajar las paradas. Tocá tu parada en el mapa.</p>}
+            {places && placeQuery.trim().length >= 2 && !found.length && <p className="text-sm text-fg-muted" role="status">No encontramos "{placeQuery}". Probá con la calle o tocá tu parada en el mapa.</p>}
+            {found.length > 0 && (
+              <ul className="card divide-y divide-line" aria-label="Paradas y lugares encontrados">
+                {found.map((p) => (
+                  <li key={`${p.kind}|${p.name}|${p.lng}|${p.lat}`}>
+                    <button className="flex w-full items-center gap-3 p-3 text-left hover:bg-surface-2" onClick={() => choose(p)}>
+                      <span aria-hidden>{p.kind === "stop" ? "🚏" : "📍"}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-semibold">{p.name}</span>
+                        <span className="block text-xs text-fg-subtle">{KIND_LABEL[p.kind]}</span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           {!load && <p className="text-sm text-fg-muted" role="status">Bajando los recorridos (una vez por día, ~130 KB)…</p>}
           {load && !catalog && <p className="text-sm text-warning" role="alert">No pudimos bajar los recorridos. Probá de nuevo con conexión.</p>}
-          {!stop && catalog && <p className="text-sm text-fg-muted">El VMT no publica las paradas: marcá dónde esperás el colectivo, sobre la calle por la que pasa.</p>}
+          {!stop && catalog && !placeQuery && <p className="text-sm text-fg-muted">O tocá en el mapa dónde esperás el colectivo, sobre la calle por la que pasa.</p>}
           {stop && catalog && !options.length && <p className="text-sm text-fg-muted" role="status">No pasa ningún recorrido a menos de {STOP_CFG.WIDE_RADIUS_M} m. Tocá más cerca de la calle por la que pasa tu colectivo.</p>}
           {nearest > 0 && <p className="text-sm text-warning" role="status">Las líneas más cercanas pasan a {distance(nearest)}. Si tu parada está sobre esa calle, tocá ahí.</p>}
           {directions.length > 1 && (
