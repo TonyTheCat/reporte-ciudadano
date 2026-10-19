@@ -41,6 +41,18 @@ export default function ReportWizard({ categories, turnstileSiteKey, loggedIn, h
   const [outcome, setOutcome] = useState<Outcome>();
   const online = useOnline();
   const [captcha, setCaptcha] = useState<string>();
+  const root = useRef<HTMLDivElement>(null);
+  const firstStep = useRef(true);
+
+  // Al cambiar de paso, el botón que se tocó desaparece y el foco quedaría en el <body>: se lleva al título
+  // del paso nuevo, que el lector de pantalla anuncia. No en la primera carga, para no saltear el header.
+  useEffect(() => {
+    if (firstStep.current) {
+      firstStep.current = false;
+      return;
+    }
+    root.current?.querySelector<HTMLElement>("[data-step-heading]")?.focus();
+  }, [step]);
 
   // Preselección por URL: /reportar?categoria=bache
   useEffect(() => {
@@ -109,11 +121,11 @@ export default function ReportWizard({ categories, turnstileSiteKey, loggedIn, h
   const stepIndex = { category: 0, location: 1, details: 2, done: 3 }[step];
 
   return (
-    <div className="mx-auto max-w-xl px-4 pb-10">
+    <div ref={root} className="mx-auto max-w-xl px-4 pb-10">
       {step !== "done" && (
         <ol className="my-4 grid grid-cols-3 gap-2" aria-label="Pasos">
           {["Qué pasa", "Dónde", "Detalles"].map((s, i) => (
-            <li key={s} className="text-center text-xs font-semibold">
+            <li key={s} className="text-center text-xs font-semibold" aria-current={i === stepIndex ? "step" : undefined}>
               <div className={`mb-1 h-1.5 rounded-full ${i <= stepIndex ? "bg-brand-600" : "bg-fill-strong"}`} />
               <span className={i === stepIndex ? "text-accent" : "text-fg-subtle"}>{i + 1}. {s}</span>
             </li>
@@ -123,7 +135,7 @@ export default function ReportWizard({ categories, turnstileSiteKey, loggedIn, h
 
       {step === "category" && (
         <section>
-          <h1 className="mb-1 text-2xl font-extrabold">¿Qué problema querés reportar?</h1>
+          <h1 data-step-heading tabIndex={-1} className="outline-none mb-1 text-2xl font-extrabold">¿Qué problema querés reportar?</h1>
           <p className="mb-4 text-fg-muted">Elegí la categoría que mejor lo describa.</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {categories.map((c) => (
@@ -159,7 +171,7 @@ export default function ReportWizard({ categories, turnstileSiteKey, loggedIn, h
           <div className="flex items-center gap-3">
             <button className="btn-ghost px-3 py-2" onClick={() => setStep("location")} aria-label="Volver">←</button>
             <div>
-              <h1 className="text-xl font-extrabold">{category.icon} {category.name}</h1>
+              <h1 data-step-heading tabIndex={-1} className="outline-none text-xl font-extrabold">{category.icon} {category.name}</h1>
               <p className="text-sm text-fg-subtle">{place || "Ubicación marcada en el mapa"}</p>
             </div>
           </div>
@@ -248,7 +260,7 @@ export default function ReportWizard({ categories, turnstileSiteKey, loggedIn, h
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success-soft text-3xl">✓</div>
           {outcome.queued ? (
             <>
-              <h1 className="text-2xl font-extrabold">Reporte guardado</h1>
+              <h1 data-step-heading tabIndex={-1} className="outline-none text-2xl font-extrabold">Reporte guardado</h1>
               {/* Sin conexión la página puede venir de la caché, sin sesión: si hace falta el captcha, lo dice el servidor al enviar. */}
               <p className="mt-2 text-fg-muted">
                 No hay conexión ahora. Lo vamos a enviar cuando vuelvas a tener señal y abras la app. Si hace falta confirmar
@@ -257,7 +269,7 @@ export default function ReportWizard({ categories, turnstileSiteKey, loggedIn, h
             </>
           ) : (
             <>
-              <h1 className="text-2xl font-extrabold">¡Gracias por reportar!</h1>
+              <h1 data-step-heading tabIndex={-1} className="outline-none text-2xl font-extrabold">¡Gracias por reportar!</h1>
               <p className="mt-2 text-fg-muted">Tu código de seguimiento es</p>
               <p className="my-2 font-mono text-2xl font-bold tracking-wider text-accent">{outcome.report.code}</p>
               {outcome.photosPending ? (
@@ -383,7 +395,7 @@ function LocationStep({ category, initial, homeBBox, onBack, onConfirm }: {
       <div className="mb-3 flex items-center gap-3">
         <button className="btn-ghost px-3 py-2" onClick={onBack} aria-label="Volver">←</button>
         <div>
-          <h1 className="text-xl font-extrabold">¿Dónde está?</h1>
+          <h1 data-step-heading tabIndex={-1} className="outline-none text-xl font-extrabold">¿Dónde está?</h1>
           <p className="text-sm text-fg-subtle">{noMap ? "Usá el GPS de tu teléfono para marcar el lugar." : "Mové el mapa para que el pin quede sobre el problema."}</p>
         </div>
       </div>

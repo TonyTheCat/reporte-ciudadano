@@ -149,9 +149,9 @@ export default function MapView({ categories, initial, home }: {
           ))}
         </div>
         <div className="pointer-events-auto flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
-          <div className="inline-flex shrink-0 rounded-xl bg-surface p-1 shadow ring-1 ring-line">
+          <div className="inline-flex shrink-0 rounded-xl bg-surface p-1 shadow ring-1 ring-line" role="group" aria-label="Estado de los reportes">
             {STATUS_FILTERS.map((s) => (
-              <button key={s.value} onClick={() => setStatus(s.value)}
+              <button key={s.value} onClick={() => setStatus(s.value)} aria-pressed={status === s.value}
                 className={`rounded-lg px-2 py-1.5 text-xs font-semibold sm:px-3 ${status === s.value ? "bg-brand-600 text-white" : "text-fg-muted"}`}>
                 {s.label}
               </button>
@@ -172,14 +172,15 @@ export default function MapView({ categories, initial, home }: {
         className={`absolute inset-x-0 bottom-0 z-20 mx-auto max-w-xl rounded-t-3xl bg-raised shadow-[0_-8px_30px_rgba(0,0,0,.12)] transition-[height] duration-300 md:bottom-4 md:right-4 md:left-auto md:mx-0 md:w-96 md:rounded-3xl ${sheet === "open" ? "h-[65%]" : "h-[7rem] md:h-[70%]"}`}
         aria-label="Reportes en esta zona"
       >
-        <button className="flex w-full flex-col items-center pt-2 pb-1 md:hidden" onClick={() => setSheet(sheet === "open" ? "peek" : "open")} aria-expanded={sheet === "open"}>
-          <span className="h-1.5 w-10 rounded-full bg-fill-strong" />
+        <button className="flex w-full flex-col items-center pt-2 pb-1 md:hidden" onClick={() => setSheet(sheet === "open" ? "peek" : "open")}
+          aria-label="Lista de reportes" aria-expanded={sheet === "open"} aria-controls="lista-reportes-mapa">
+          <span className="h-1.5 w-10 rounded-full bg-fill-strong" aria-hidden />
         </button>
         <div className="flex items-baseline justify-between px-4 pb-2 md:pt-4">
           <h2 className="font-bold">{loading ? "Buscando…" : `${items.length}${items.length === 40 ? "+" : ""} reportes en esta zona`}</h2>
           <a href="/reportar" className="text-sm font-semibold text-alert-fg">+ Reportar</a>
         </div>
-        <ul className="h-[calc(100%-4.5rem)] overflow-y-auto px-2 pb-4">
+        <ul id="lista-reportes-mapa" className="h-[calc(100%-4.5rem)] overflow-y-auto px-2 pb-4">
           {items.length === 0 && !loading && (
             <li className="px-3 py-6 text-center text-sm text-fg-subtle">No hay reportes acá todavía. ¿Viste algún problema? <a className="font-semibold text-accent" href="/reportar">Reportalo</a>.</li>
           )}
