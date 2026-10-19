@@ -1,9 +1,15 @@
 import type { APIContext } from "astro";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { gzipSync } from "node:zlib";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BusFeature } from "../src/lib/server/buses";
 
-const { getBusRoute, listBusRoutes } = vi.hoisted(() => ({ getBusRoute: vi.fn(), listBusRoutes: vi.fn() }));
+const { getBusRoute, listBusRoutes, s3Send } = vi.hoisted(() => ({ getBusRoute: vi.fn(), listBusRoutes: vi.fn(), s3Send: vi.fn() }));
 vi.mock("@rc/core/bus-routes", () => ({ getBusRoute, listBusRoutes }));
+// La última consulta de VmtCollector, en S3.
+vi.mock("@aws-sdk/client-s3", () => ({
+  S3Client: class { send = s3Send; },
+  GetObjectCommand: class { constructor(readonly input: unknown) {} },
+}));
 
 // Cada test importa el módulo de nuevo: guarda en memoria la lista de empresas y los últimos buses.
 async function load() {
@@ -13,8 +19,9 @@ async function load() {
   return { ...(await import("../src/lib/server/buses")), ...(await import("../src/pages/api/buses/index")), routeGet: route.GET, routesGet: routes.GET };
 }
 
-// /api/buses no lee nada del pedido; /api/buses/route solo la URL.
-const ctx = {} as APIContext;
+// /api/buses y /api/buses/route solo leen la URL.
+const ctx = { url: new URL("https://ciudadano.test/api/buses") } as APIContext;
+const snapshotRequest = { url: new URL("https://ciudadano.test/api/buses?snapshot=1") } as APIContext;
 const routeRequest = (query: string) => ({ url: new URL(`https://ciudadano.test/api/buses/route?${query}`) }) as APIContext;
 const NOW = Date.parse("2026-10-11T15:00:00Z");
 const bus = (id: number, secondsAgo: number, extra: object = {}) => ({
@@ -27,11 +34,71 @@ let routes: Record<string, () => Response | Promise<Response>>;
 beforeEach(() => {
   vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
   routes = {};
+  s3Send.mockReset();
   vi.stubGlobal("fetch", async (url: string) => {
     const path = url.replace("https://sistemas.mopc.gov.py/prototipo_vmt/api", "");
     const route = routes[path];
     if (!route) throw new Error(`fetch inesperado: ${path}`);
     return route();
+  });
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
+describe("colectivos al abrir el mapa", () => {
+  // Una consulta de VmtCollector como la guarda en S3: de hace `secondsAgo`, con los buses de cada empresa.
+  const poll = (secondsAgo: number) => ({
+    polled_at: new Date(NOW - secondsAgo * 1000).toISOString(),
+    companies: [
+      { code: 22, status: 200, latency_ms: 2300, buses: [bus(1, secondsAgo + 5)] },
+      { code: 44, status: null, latency_ms: 20000, error: "timeout" },
+    ],
+  });
+  const stored = (value: unknown) => s3Send.mockResolvedValue({ Body: { transformToByteArray: async () => gzipSync(JSON.stringify(value)) } });
+  const vmtUp = () => {
+    routes["/empresas"] = () => ok([{ cod_catalogo: 22 }]);
+    routes["/buses?cod_catalogo=22"] = () => ok([bus(9, 5)]);
+  };
+
+  it("muestra la última consulta guardada sin esperar al VMT", async () => {
+    vi.stubEnv("MEDIA_BUCKET", "media");
+    stored(poll(40));
+    const { GET } = await load();
+    // Sin rutas del VMT: si se le pidiera algo, fetch fallaría y la respuesta sería 502.
+    const res = await GET(snapshotRequest);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { features: BusFeature[] };
+    expect(body.features.map((f) => [f.properties.id, f.properties.companyCode])).toEqual([[1, 22]]);
+    expect(s3Send.mock.calls[0][0].input).toEqual({ Bucket: "media", Key: "vmt/latest/buses.json.gz" });
+  });
+
+  it("le pide al VMT si la última consulta es vieja, no se puede leer o no hay bucket", async () => {
+    vmtUp();
+    vi.stubEnv("MEDIA_BUCKET", "media");
+    stored(poll(5 * 60));
+    let { GET } = await load();
+    expect(((await (await GET(snapshotRequest)).json()) as { features: BusFeature[] }).features.map((f) => f.properties.id)).toEqual([9]);
+
+    s3Send.mockRejectedValue(new Error("NoSuchKey"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    ({ GET } = await load());
+    expect(((await (await GET(snapshotRequest)).json()) as { features: BusFeature[] }).features.map((f) => f.properties.id)).toEqual([9]);
+
+    vi.stubEnv("MEDIA_BUCKET", "");
+    ({ GET } = await load());
+    expect(((await (await GET(snapshotRequest)).json()) as { features: BusFeature[] }).features.map((f) => f.properties.id)).toEqual([9]);
+    expect(s3Send).toHaveBeenCalledTimes(2);
+  });
+
+  it("los pedidos siguientes van al VMT aunque haya una consulta guardada", async () => {
+    vmtUp();
+    vi.stubEnv("MEDIA_BUCKET", "media");
+    stored(poll(40));
+    const { GET } = await load();
+    expect(((await (await GET(ctx)).json()) as { features: BusFeature[] }).features.map((f) => f.properties.id)).toEqual([9]);
+    expect(s3Send).not.toHaveBeenCalled();
   });
 });
 

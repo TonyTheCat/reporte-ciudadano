@@ -36,7 +36,7 @@ export function createBuses(media: ReturnType<typeof createStorage>["media"], db
       memory: "256 MB",
       // La consulta del minuto siguiente reemplaza a un reintento.
       retries: 0,
-      permissions: mediaPermissions(media, [{ actions: ["s3:PutObject"], prefixes: ["vmt/raw/buses/"] }]),
+      permissions: mediaPermissions(media, [{ actions: ["s3:PutObject"], prefixes: ["vmt/raw/buses/", "vmt/latest/"] }]),
     },
   });
 
