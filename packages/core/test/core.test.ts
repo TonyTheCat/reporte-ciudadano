@@ -461,9 +461,10 @@ describe("paradas y lugares para buscar", () => {
     routes = {
       "/paradas?id_itinerario=1": () => ok([stop(1, "Choferes del Chaco y Las Perlas", -57.6), stop(2, "bus_stop", -57.61), stop(3, null, -57.62), ...route]),
       // La misma parada en otro recorrido, a 10 m.
-      "/paradas?id_itinerario=2": () => ok([stop(4, "Choferes del Chaco y Las Perlas", -57.6001)]),
+      "/paradas?id_itinerario=2": () => ok([stop(4, "Choferes del Chaco y Las Perlas", -57.6001), stop(1, "Choferes del Chaco y Las Perlas", -57.6)]),
       [OVERPASS]: () => new Response(JSON.stringify(osm)),
     };
+    // La misma parada (id 1) llega en los dos recorridos.
     expect(await syncPlaces(snapshot([1, 2]) as never)).toEqual({ stops: 9, landmarks: 2 });
     const file = await listPlaces();
     expect(file.places).toEqual([
@@ -477,9 +478,13 @@ describe("paradas y lugares para buscar", () => {
   it("si una fuente falla quedan sus lugares del día anterior", async () => {
     const { syncPlaces, listPlaces } = await import("../src/places");
     const before = await listPlaces();
-    routes = { [OVERPASS]: () => new Response("", { status: 429 }) };
+    let tries = 0;
+    routes = { [OVERPASS]: () => (tries++, new Response("", { status: 429 })) };
     vi.spyOn(console, "error").mockImplementation(() => {});
-    expect(await syncPlaces(snapshot([1, 2]) as never)).toEqual({ stops: null, landmarks: null });
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(await syncPlaces(snapshot([1, 2]) as never, { retryMs: 0 })).toEqual({ stops: null, landmarks: null });
+    // Overpass se reintenta una vez.
+    expect(tries).toBe(2);
     expect(await listPlaces()).toEqual(before);
   });
 });

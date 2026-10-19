@@ -19,6 +19,8 @@ const STOPS_TIMEOUT_MS = 20_000;
 const CONCURRENCY = 4;
 const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
 const OVERPASS_TIMEOUT_MS = 180_000;
+// Overpass rechaza seguido por carga (429, 504): se espera y se reintenta una vez.
+const OVERPASS_RETRY_MS = 30_000;
 // Gran Asunción, con margen: sur, oeste, norte, este.
 const BBOX = "-25.55,-57.75,-25.15,-57.35";
 // Paradas con el mismo nombre a menos de esto (~30 m) son la misma: el VMT la repite en cada recorrido que pasa.
@@ -64,7 +66,8 @@ export async function syncStops(snapshot: ItinerariesSnapshot, opts: { deadline?
     .map((i) => i.id_itinerario!);
   const queue = [...new Set(ids)];
   const total = queue.length;
-  const rows: { source_id: string; name: string; lng: number; lat: number }[] = [];
+  // Por id: el VMT repite la misma parada en cada recorrido que pasa por ahí.
+  const rows = new Map<string, { source_id: string; name: string; lng: number; lat: number }>();
   let failed = 0;
   async function worker() {
     for (let id = queue.shift(); id !== undefined; id = queue.shift()) {
@@ -80,19 +83,18 @@ export async function syncStops(snapshot: ItinerariesSnapshot, opts: { deadline?
       for (const s of r.data) {
         const name = s.nombre?.trim();
         if (!name || GENERIC_STOP.test(normSearch(name)) || !Number.isFinite(s.latitud) || !Number.isFinite(s.longitud)) continue;
-        rows.push({ source_id: String(s.id), name, lng: s.longitud, lat: s.latitud });
+        rows.set(String(s.id), { source_id: String(s.id), name, lng: s.longitud, lat: s.latitud });
       }
     }
   }
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
   // Con la mitad de los recorridos sin paradas, se conservan las del día anterior.
-  if (!rows.length || failed > total / 2) throw new Error(`VMT: paradas de ${failed} de ${total} recorridos sin respuesta`);
-  await replace("vmt", rows.map((r) => ({ ...r, kind: "stop" as const, alt: [] as string[] })));
-  return { stops: rows.length, failed };
+  if (!rows.size || failed > total / 2) throw new Error(`VMT: paradas de ${failed} de ${total} recorridos sin respuesta`);
+  await replace("vmt", [...rows.values()].map((r) => ({ ...r, kind: "stop" as const, alt: [] as string[] })));
+  return { stops: rows.size, failed };
 }
 
-/** Lugares conocidos de OpenStreetMap. */
-export async function syncLandmarks(): Promise<{ landmarks: number }> {
+async function overpass(): Promise<OsmElement[]> {
   const res = await fetch(OVERPASS_URL, {
     method: "POST",
     body: new URLSearchParams({ data: overpassQuery() }),
@@ -101,7 +103,16 @@ export async function syncLandmarks(): Promise<{ landmarks: number }> {
     signal: AbortSignal.timeout(OVERPASS_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`Overpass: HTTP ${res.status}`);
-  const { elements } = (await res.json()) as { elements: OsmElement[] };
+  return ((await res.json()) as { elements: OsmElement[] }).elements;
+}
+
+/** Lugares conocidos de OpenStreetMap. */
+export async function syncLandmarks({ retryMs = OVERPASS_RETRY_MS } = {}): Promise<{ landmarks: number }> {
+  const elements = await overpass().catch(async (err: unknown) => {
+    console.warn("Overpass, se reintenta", err);
+    await new Promise((r) => setTimeout(r, retryMs));
+    return overpass();
+  });
   const rows = elements.flatMap((e) => {
     const tags = e.tags ?? {};
     const kind = osmKind(tags);
@@ -127,8 +138,8 @@ async function replace(source: string, rows: { source_id: string; name: string; 
 }
 
 /** Las dos fuentes; una que falla no frena a la otra. */
-export async function syncPlaces(snapshot: ItinerariesSnapshot, opts: { deadline?: number } = {}) {
-  const [stops, landmarks] = await Promise.allSettled([syncStops(snapshot, opts), syncLandmarks()]);
+export async function syncPlaces(snapshot: ItinerariesSnapshot, opts: { deadline?: number; retryMs?: number } = {}) {
+  const [stops, landmarks] = await Promise.allSettled([syncStops(snapshot, opts), syncLandmarks(opts)]);
   for (const r of [stops, landmarks]) if (r.status === "rejected") console.error("lugares", r.reason);
   return {
     stops: stops.status === "fulfilled" ? stops.value.stops : null,
