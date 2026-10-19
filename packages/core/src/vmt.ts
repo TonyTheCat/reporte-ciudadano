@@ -3,6 +3,12 @@
  * abierto oficial: no tiene licencia ni garantía de que siga igual, así que todo lo que depende de su formato
  * está acá. Los buses reportan su GPS cada ~10 s.
  */
+/**
+ * Última consulta de VmtCollector (ver vmt-history.ts) en el bucket Media, que se pisa cada minuto: el mapa la
+ * muestra al abrirse sin esperar al VMT. Está acá y no en vmt-history.ts para que la web no cargue ese módulo.
+ */
+export const LATEST_BUSES_KEY = "vmt/latest/buses.json.gz";
+
 const VMT_API = "https://sistemas.mopc.gov.py/prototipo_vmt/api";
 const TIMEOUT_MS = 5000;
 

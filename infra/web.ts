@@ -52,6 +52,8 @@ export function createWeb(opts: {
         { actions: ["s3:PutObject"], prefixes: ["uploads/"] },
         // Moderación: aprobar, rechazar, ocultar y republicar mueven o borran versiones procesadas.
         { actions: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"], prefixes: ["review/", "public/", "withheld/"] },
+        // Última consulta de VmtCollector: los colectivos del mapa al abrirlo.
+        { actions: ["s3:GetObject"], prefixes: ["vmt/latest/"] },
       ]),
       {
         actions: ["cloudfront:CreateInvalidation"],

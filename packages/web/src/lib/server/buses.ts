@@ -1,7 +1,11 @@
 /** Posición de los colectivos del área metropolitana, del prototipo del VMT (ver @rc/core/vmt). */
+import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { listBusRoutes } from "@rc/core/bus-routes";
-import { vmt, type VmtBus, type VmtCompany } from "@rc/core/vmt";
+import { LATEST_BUSES_KEY, vmt, type VmtBus, type VmtCompany } from "@rc/core/vmt";
+import type { BusPoll } from "@rc/core/vmt-history";
 import { createHash } from "node:crypto";
+import { gunzipSync } from "node:zlib";
+import { config } from "./config";
 
 // Un bus que no reportó en este tiempo está apagado o fuera de servicio.
 const STALE_MS = 2 * 60 * 1000;
@@ -10,6 +14,8 @@ const STALE_MS = 2 * 60 * 1000;
 const DELAYED_MS = 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const BUSES_TTL_MS = 10 * 1000;
+// VmtCollector deja una consulta por minuto; una más vieja quiere decir que no está corriendo.
+const SNAPSHOT_MAX_AGE_MS = 3 * 60 * 1000;
 // Recorrido de un bus que todavía no tiene uno asignado.
 const NO_ROUTE = "0000";
 // Igual que en el cliente (lib/client/bus-heading.ts): por debajo de esto el bus está detenido y el rumbo calculado es ruido.
@@ -112,6 +118,8 @@ export function delayedCompanies(rows: CompanyBus[], now = Date.now()): DelayedC
 
 export interface LiveBuses { features: BusFeature[]; delayed: DelayedCompany[] }
 
+const toLiveBuses = (rows: CompanyBus[]): LiveBuses => ({ features: liveBuses(rows), delayed: delayedCompanies(rows) });
+
 async function fetchBuses(): Promise<LiveBuses> {
   const codes = await companyCodes(null);
   const results = await Promise.allSettled(
@@ -120,14 +128,40 @@ async function fetchBuses(): Promise<LiveBuses> {
   const ok = results.filter((r): r is PromiseFulfilledResult<CompanyBus[]> => r.status === "fulfilled");
   // Si cae una empresa se muestran las demás; si caen todas, el prototipo no está respondiendo.
   if (!ok.length && codes.length) throw (results[0] as PromiseRejectedResult).reason;
-  const rows = ok.flatMap((r) => r.value);
-  const delayed = delayedCompanies(rows);
-  if (delayed.length) console.warn("VMT atrasado", delayed.map((d) => `${d.companyCode}:${Math.round((Date.now() - Date.parse(d.lastAt)) / 60_000)}min`).join(" "));
-  return { features: liveBuses(rows), delayed };
+  const out = toLiveBuses(ok.flatMap((r) => r.value));
+  if (out.delayed.length) console.warn("VMT atrasado", out.delayed.map((d) => `${d.companyCode}:${Math.round((Date.now() - Date.parse(d.lastAt)) / 60_000)}min`).join(" "));
+  return out;
+}
+
+const s3 = new S3Client({});
+
+/** Los buses de la última consulta de VmtCollector, o `null` si no hay una de los últimos minutos. */
+async function fetchSnapshot(): Promise<LiveBuses | null> {
+  if (!config.mediaBucket) return null; // dev local sin AWS
+  const obj = await s3.send(new GetObjectCommand({ Bucket: config.mediaBucket, Key: LATEST_BUSES_KEY }));
+  const poll = JSON.parse(gunzipSync(await obj.Body!.transformToByteArray()).toString("utf8")) as BusPoll;
+  if (!(Date.now() - Date.parse(poll.polled_at) <= SNAPSHOT_MAX_AGE_MS)) return null;
+  return toLiveBuses(poll.companies.flatMap((c) => (c.buses ?? []).map((b): CompanyBus => ({ ...b, company_code: c.code }))));
 }
 
 const buses = cached(BUSES_TTL_MS, fetchBuses);
-export const currentBuses = () => buses(null);
+const snapshot = cached(BUSES_TTL_MS, fetchSnapshot);
+
+/**
+ * Los buses en vivo. Pedirle al VMT las 34 empresas tarda de 2 a 5 s, así que al abrir el mapa (`snapshot`) se
+ * muestra la última consulta de VmtCollector, que sale de S3 enseguida y tiene como mucho un minuto más de atraso.
+ * Si no hay una reciente o no se puede leer, se le pide al VMT.
+ */
+export async function currentBuses({ snapshot: fromSnapshot = false } = {}): Promise<LiveBuses> {
+  if (fromSnapshot) {
+    const last = await snapshot(null).catch((err) => {
+      console.error(err);
+      return null;
+    });
+    if (last) return last;
+  }
+  return buses(null);
+}
 
 /**
  * Catálogo de todos los recorridos (ver @rc/core/bus-catalog), armado una vez por hora por instancia: la consulta

@@ -12,6 +12,7 @@ El código está en `packages/core/src/vmt-history.ts` y las Lambdas en `infra/b
 | Qué | Dónde | Quién lo escribe | Retención |
 |---|---|---|---|
 | Respuesta cruda de `/buses` de las 34 empresas | S3 `vmt/raw/buses/date=AAAA-MM-DD/HHMMSS.json.gz` (~31 KB) | `VmtCollector`, cada minuto | 60 días |
+| La misma respuesta, la última (el mapa la muestra al abrirse) | S3 `vmt/latest/buses.json.gz` | `VmtCollector`, cada minuto | se pisa |
 | Respuesta cruda de `/itinerarios` (historial de recorridos) | S3 `vmt/raw/itineraries/date=AAAA-MM-DD.json.gz` (~1,4 MB) | `BusRoutesSync`, una vez por día | indefinida |
 | Un reporte por fila, sin repetir | S3 `vmt/positions/date=AAAA-MM-DD/positions.parquet` | `VmtCompactor`, 04:00 del día siguiente | indefinida |
 | Cómo respondió cada empresa en cada consulta | Postgres `vmt_polls` | `VmtCollector` | indefinida |

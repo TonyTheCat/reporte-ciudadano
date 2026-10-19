@@ -14,6 +14,9 @@ describe("colectivos en vivo en el navegador", () => {
     // Sin el campo (respuesta de una versión anterior), ninguna empresa atrasada.
     expect(feed?.delayed).toEqual([]);
     expect(f).toHaveBeenCalledWith("/api/buses", { credentials: "omit", referrerPolicy: "no-referrer", signal: undefined });
+    // El primer pedido del mapa: la última consulta guardada.
+    await fetchLiveBuses(undefined, f as unknown as typeof fetch, { snapshot: true });
+    expect(f).toHaveBeenLastCalledWith("/api/buses?snapshot=1", { credentials: "omit", referrerPolicy: "no-referrer", signal: undefined });
     const down = vi.fn(async () => new Response("", { status: 502 }));
     expect(await fetchLiveBuses(undefined, down as unknown as typeof fetch)).toBeNull();
   });

@@ -18,9 +18,12 @@ export interface LiveFeed {
   clockOffsetMs?: number;
 }
 
-/** `null`: el VMT no respondió (502) o hubo otro error del servidor. */
-export async function fetchLiveBuses(signal?: AbortSignal, f: typeof fetch = fetch): Promise<LiveFeed | null> {
-  const res = await f("/api/buses", { ...PRIVATE_FETCH, signal });
+/**
+ * `null`: el VMT no respondió (502) o hubo otro error del servidor. `snapshot`: para el primer pedido, la última
+ * consulta guardada, que llega enseguida aunque con hasta un minuto más de atraso (ver lib/server/buses.ts).
+ */
+export async function fetchLiveBuses(signal?: AbortSignal, f: typeof fetch = fetch, { snapshot = false } = {}): Promise<LiveFeed | null> {
+  const res = await f(snapshot ? "/api/buses?snapshot=1" : "/api/buses", { ...PRIVATE_FETCH, signal });
   if (!res.ok) return null;
   const receivedAt = Date.now();
   const data = (await res.json()) as { features: BusFeature[]; delayed?: DelayedCompany[] };

@@ -162,6 +162,8 @@ export function busLayer(map: MLMap) {
   let frame = 0;
   let shown: Bus[] = [];
   let tracks = new Map<number, Track>();
+  // Hasta la primera respuesta se piden los buses guardados, que llegan enseguida; después, los del VMT.
+  let loaded = false;
   let selected: { id: number; popup: Popup } | undefined;
 
   const source = (id: string) => map.getSource(id) as GeoJSONSource | undefined;
@@ -198,8 +200,9 @@ export function busLayer(map: MLMap) {
   }
 
   async function load(signal: AbortSignal) {
-    const data = await fetchLiveBuses(signal);
+    const data = await fetchLiveBuses(signal, undefined, { snapshot: !loaded });
     if (!data) return;
+    loaded = true;
     tracks = trackHeadings(tracks, data.features.map((f) => ({ id: f.properties.id, at: f.geometry.coordinates, heading: f.properties.heading })));
     glide(data.features.map((f) => {
       const heading = tracks.get(f.properties.id)?.heading;
@@ -272,6 +275,7 @@ export function busLayer(map: MLMap) {
         selected?.popup.remove();
         // Al volver a prenderla, el movimiento desde una posición vieja no dice hacia dónde va el bus.
         tracks = new Map();
+        loaded = false;
       }
     },
     destroy() {
