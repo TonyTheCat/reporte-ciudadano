@@ -94,24 +94,28 @@ export async function syncStops(snapshot: ItinerariesSnapshot, opts: { deadline?
   return { stops: rows.size, failed };
 }
 
-async function overpass(): Promise<OsmElement[]> {
+async function overpass(deadline?: number): Promise<OsmElement[]> {
+  // Con límite (la Lambda de los recorridos), Overpass se corta antes para que quede tiempo de guardar.
+  const timeoutMs = deadline ? Math.min(OVERPASS_TIMEOUT_MS, deadline - Date.now()) : OVERPASS_TIMEOUT_MS;
+  if (timeoutMs <= 0) throw new Error("Overpass: no queda tiempo antes del límite");
   const res = await fetch(OVERPASS_URL, {
     method: "POST",
     body: new URLSearchParams({ data: overpassQuery() }),
     // Overpass rechaza pedidos sin User-Agent (406).
     headers: { "User-Agent": "reporte-ciudadano (github.com/marcosferr/reporte-ciudadano)" },
-    signal: AbortSignal.timeout(OVERPASS_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) throw new Error(`Overpass: HTTP ${res.status}`);
   return ((await res.json()) as { elements: OsmElement[] }).elements;
 }
 
 /** Lugares conocidos de OpenStreetMap. */
-export async function syncLandmarks({ retryMs = OVERPASS_RETRY_MS } = {}): Promise<{ landmarks: number }> {
-  const elements = await overpass().catch(async (err: unknown) => {
+export async function syncLandmarks({ retryMs = OVERPASS_RETRY_MS, deadline }: { retryMs?: number; deadline?: number } = {}): Promise<{ landmarks: number }> {
+  const elements = await overpass(deadline).catch(async (err: unknown) => {
+    if (deadline && Date.now() + retryMs >= deadline) throw err;
     console.warn("Overpass, se reintenta", err);
     await new Promise((r) => setTimeout(r, retryMs));
-    return overpass();
+    return overpass(deadline);
   });
   const rows = elements.flatMap((e) => {
     const tags = e.tags ?? {};

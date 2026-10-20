@@ -487,6 +487,16 @@ describe("paradas y lugares para buscar", () => {
     expect(tries).toBe(2);
     expect(await listPlaces()).toEqual(before);
   });
+
+  it("sin tiempo antes del límite de la Lambda no pide a Overpass ni reintenta", async () => {
+    const { syncLandmarks } = await import("../src/places");
+    let tries = 0;
+    routes = { [OVERPASS]: () => (tries++, new Response("", { status: 429 })) };
+    await expect(syncLandmarks({ deadline: Date.now() - 1 })).rejects.toThrow(/no queda tiempo/);
+    // Falla y el reintento no entra antes del límite.
+    await expect(syncLandmarks({ retryMs: 60_000, deadline: Date.now() + 30_000 })).rejects.toThrow(/HTTP 429/);
+    expect(tries).toBe(1);
+  });
 });
 
 describe("histórico del VMT", () => {
